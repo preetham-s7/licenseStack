@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="Universal software licensing for developers. Register apps, issue keys, and bind access to trusted devices." />
+    <title>LicenseStack — Universal software licensing</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="ambient ambient-one"></div>
+    <div class="ambient ambient-two"></div>
+
+    <header class="site-header">
+      <a class="brand" href="#top" aria-label="LicenseStack home">
+        <span class="brand-mark"><span></span><span></span><span></span></span>
+        <span>LicenseStack</span>
+      </a>
+      <button class="menu-toggle" aria-expanded="false" aria-controls="site-nav">Menu</button>
+      <nav id="site-nav" class="site-nav">
+        <a href="#platform">Platform</a>
+        <a href="#developers">Developers</a>
+        <a href="#api">API</a>
+        <a href="#pricing">Pricing</a>
+        <a class="nav-login" href="/dashboard" data-platform-route="/dashboard">Sign in</a>
+        <a class="button button-small" href="/dashboard" data-platform-route="/dashboard">Start building <span>↗</span></a>
+      </nav>
+    </header>
+
+    <main id="top">
+      <section class="hero shell">
+        <div class="hero-copy">
+          <div class="eyebrow"><span class="pulse"></span> Universal licensing infrastructure</div>
+          <h1>Ship software.<br /><em>Control access.</em></h1>
+          <p class="hero-lede">A calm, developer-first way to issue licenses, bind them to trusted devices, and give every application a secure path to activation.</p>
+          <div class="hero-actions">
+            <a class="button" href="/dashboard" data-platform-route="/dashboard">Create your first app <span>↗</span></a>
+            <a class="text-link" href="#api">Read the API docs <span>→</span></a>
+          </div>
+          <div class="hero-note"><span class="lock-icon">⌁</span> Keys are hashed. Device identities are one-way fingerprints.</div>
+        </div>
+
+        <div class="hero-visual" aria-label="License activation flow illustration">
+          <div class="visual-orbit orbit-large"></div>
+          <div class="visual-orbit orbit-small"></div>
+          <div class="visual-card activation-card">
+            <div class="card-topline"><span class="status-dot"></span> ACTIVATION REQUEST <span class="mono muted">/v1/activate</span></div>
+            <div class="request-line"><span class="request-key">app_id</span><span>design-tool</span></div>
+            <div class="request-line"><span class="request-key">license</span><span>LIC-7K2M-••••-••••</span></div>
+            <div class="request-line"><span class="request-key">device</span><span class="device-chip">fingerprint verified</span></div>
+            <div class="card-result"><span class="checkmark">✓</span><div><strong>Access granted</strong><small>Bound to this device · 7:42 PM</small></div><span class="result-arrow">→</span></div>
+          </div>
+          <div class="floating-pill pill-app"><span class="pill-icon icon-purple">◈</span><span>your application</span></div>
+          <div class="floating-pill pill-key"><span class="pill-icon icon-green">✦</span><span>one-time license</span></div>
+          <div class="floating-pill pill-device"><span class="pill-icon icon-orange">◌</span><span>trusted device</span></div>
+          <div class="connector connector-a"></div><div class="connector connector-b"></div><div class="connector connector-c"></div>
+        </div>
+      </section>
+
+      <section class="proof-strip shell" aria-label="Platform highlights">
+        <div><strong>REST-first</strong><span>Works with any stack</span></div>
+        <div><strong>One key → one device</strong><span>Simple activation policy</span></div>
+        <div><strong>Built for teams</strong><span>Separate apps, clean ownership</span></div>
+        <div><strong>Open by design</strong><span>Docs your developers can use</span></div>
+      </section>
+
+      <section id="platform" class="section shell">
+        <div class="section-heading split-heading">
+          <div><div class="eyebrow">A foundation, not a feature</div><h2>Licensing that stays<br /><span>out of the way.</span></h2></div>
+          <p>Keep your product experience focused. LicenseStack handles the mechanics behind access so your team can focus on the software people came to use.</p>
+        </div>
+        <div class="feature-grid">
+          <article class="feature-card feature-blue"><div class="feature-number">01</div><div class="feature-icon">⌘</div><h3>Register any application</h3><p>Give each product its own app ID, API key, and clean licensing boundary.</p><a href="#developers">See the workflow <span>→</span></a></article>
+          <article class="feature-card feature-lilac"><div class="feature-number">02</div><div class="feature-icon">✦</div><h3>Issue keys once</h3><p>Create customer licenses that activate once and stay attached to the first trusted device.</p><a href="#api">Explore activation <span>→</span></a></article>
+          <article class="feature-card feature-sand"><div class="feature-number">03</div><div class="feature-icon">↻</div><h3>Stay in control</h3><p>Rotate API keys, reset approved device changes, revoke access, and keep an audit trail.</p><a href="/dashboard" data-platform-route="/dashboard">Open the dashboard <span>→</span></a></article>
+        </div>
+      </section>
+
+      <section id="developers" class="developer-section">
+        <div class="shell developer-layout">
+          <div class="developer-copy"><div class="eyebrow">Designed for developers</div><h2>Your app, your rules,<br /><span>your API.</span></h2><p>Register once, then manage everything through a focused dashboard or the REST API. No platform-specific runtime. No vendor lock-in.</p><div class="language-row"><span class="language-active">REST</span><span>Python</span><span>JavaScript</span><span>.NET</span><span>Java</span><span>C++</span></div></div>
+          <div class="code-window" id="api"><div class="code-header"><span class="window-dots"><i></i><i></i><i></i></span><span class="mono">activate.py</span><button class="copy-button" data-copy-target="code-sample">Copy</button></div><pre id="code-sample"><code><span class="code-keyword">from</span> license_platform_sdk <span class="code-keyword">import</span> LicenseClient
+
+client = LicenseClient(
+    base_url=<span class="code-string">"https://api.your-domain.com"</span>,
+    app_id=<span class="code-string">"your-application"</span>,
+    storage_path=<span class="code-string">"license-token.json"</span>
+)
+
+client.activate(customer_license_key)
+client.validate_online()</code></pre><div class="code-footer"><span><b class="green-dot"></b> No dependencies</span><span>Signed token · device bound</span></div></div>
+        </div>
+      </section>
+
+      <section id="dashboard" class="section shell dashboard-section">
+        <div class="section-heading centered"><div class="eyebrow">A clear place to work</div><h2>The dashboard your team<br /><span>will actually use.</span></h2><p>One glance for your applications. One click for a license. No spreadsheet archaeology.</p></div>
+        <div class="dashboard-mockup">
+          <aside class="mock-sidebar"><div class="mock-logo"><span class="brand-mark small"><span></span><span></span><span></span></span> LicenseStack</div><div class="mock-workspace"><span class="avatar">AC</span><span>Acme Cloud</span><span class="chevron">⌄</span></div><div class="mock-nav"><div class="active"><span>▦</span> Overview</div><div><span>◈</span> Applications</div><div><span>◇</span> Licenses</div><div><span>◌</span> Activity</div></div><div class="mock-bottom"><div><span>⚙</span> Settings</div><div><span>?</span> Help center</div></div></aside>
+          <div class="mock-content"><div class="mock-top"><div><span class="mock-kicker">OVERVIEW</span><h3>Good afternoon, Alex <span>✦</span></h3></div><button class="mock-button">+ New license</button></div><div class="stat-row"><div class="stat"><span>Active licenses</span><strong>2,480</strong><small class="positive">↗ 12.8% <em>vs last month</em></small></div><div class="stat"><span>Applications</span><strong>08</strong><small>Across 3 teams</small></div><div class="stat"><span>Activations</span><strong>1,942</strong><small class="positive">↗ 8.4% <em>vs last month</em></small></div></div><div class="mock-lower"><div class="activity-card"><div class="mock-card-title"><strong>Activation activity</strong><span>Last 30 days⌄</span></div><div class="chart"><div class="chart-grid"></div><svg viewBox="0 0 500 130" preserveAspectRatio="none" aria-hidden="true"><defs><linearGradient id="chartFill" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#7b61ff" stop-opacity=".28"/><stop offset="1" stop-color="#7b61ff" stop-opacity="0"/></linearGradient></defs><path d="M0,103 C30,96 41,105 68,85 S110,93 130,76 S164,84 188,60 S220,78 247,53 S280,67 306,42 S345,54 369,30 S401,52 426,22 S464,40 500,9 L500,130 L0,130 Z" fill="url(#chartFill)"/><path d="M0,103 C30,96 41,105 68,85 S110,93 130,76 S164,84 188,60 S220,78 247,53 S280,67 306,42 S345,54 369,30 S401,52 426,22 S464,40 500,9" fill="none" stroke="#7b61ff" stroke-width="3"/></svg></div><div class="chart-labels"><span>May 01</span><span>May 08</span><span>May 15</span><span>May 22</span><span>May 30</span></div></div><div class="recent-card"><div class="mock-card-title"><strong>Recent activations</strong><a href="#api">View all</a></div><div class="recent-item"><span class="recent-icon blue">◈</span><div><strong>Sketchboard</strong><small>LIC-7K2M-••••</small></div><span class="active-badge">Active</span></div><div class="recent-item"><span class="recent-icon lilac">✦</span><div><strong>Cloud Cutter</strong><small>LIC-3F1A-••••</small></div><span class="active-badge">Active</span></div><div class="recent-item"><span class="recent-icon orange">⌘</span><div><strong>Pixel Forge</strong><small>LIC-9J8P-••••</small></div><span class="active-badge">Active</span></div></div></div></div>
+        </div>
+      </section>
+
+      <section id="pricing" class="closing-section shell"><div class="closing-card" id="get-started"><div class="closing-orb"></div><div class="eyebrow">Start with the core</div><h2>Make access<br /><span>feel effortless.</span></h2><p>Build your first application in minutes. Scale into teams, seats, and plans when you are ready.</p><div class="hero-actions"><a class="button button-light" href="/dashboard" data-platform-route="/dashboard">Create a developer account <span>↗</span></a><a class="text-link light-link" href="#api">Read the docs <span>→</span></a></div></div></section>
+    </main>
+
+    <footer class="site-footer shell"><a class="brand" href="#top"><span class="brand-mark"><span></span><span></span><span></span></span><span>LicenseStack</span></a><div class="footer-links"><a href="#platform">Platform</a><a href="#developers">Developers</a><a href="#api">Documentation</a><a href="#pricing">Pricing</a><a href="/admin" data-platform-route="/admin">Admin console</a></div><span class="footer-note">Universal licensing infrastructure · 2026</span></footer>
+    <div class="toast" role="status" aria-live="polite"></div>
+    <script src="app.js"></script>
+  </body>
+</html>

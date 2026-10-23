@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content="Local LicenseStack developer workspace." />
+    <title>Developer workspace — LicenseStack</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="styles.css" />
+    <link rel="stylesheet" href="dashboard.css" />
+  </head>
+  <body class="dashboard-body">
+    <div class="ambient ambient-one"></div>
+    <div class="ambient ambient-two"></div>
+
+    <header class="dashboard-header shell">
+      <a class="brand" href="/" aria-label="LicenseStack home">
+        <span class="brand-mark"><span></span><span></span><span></span></span>
+        <span>LicenseStack</span>
+      </a>
+      <div class="dashboard-header-actions">
+        <span class="local-badge"><span></span> Local workspace</span>
+        <a class="dashboard-home-link" href="/">Back to homepage <span>↗</span></a>
+      </div>
+    </header>
+
+    <main class="dashboard-shell">
+      <section class="dashboard-hero">
+        <div>
+          <div class="eyebrow"><span class="pulse"></span> Developer workspace</div>
+          <h1>Build with confidence.<br /><em>Control access.</em></h1>
+          <p>Register applications, issue one-time licenses, and manage trusted devices from one focused workspace.</p>
+          <div class="workspace-pills"><span>REST API</span><span>Device-bound</span><span>Local-first</span></div>
+        </div>
+        <div class="workspace-preview" aria-hidden="true">
+          <div class="preview-topline"><span class="status-dot"></span> WORKSPACE STATUS <span>READY</span></div>
+          <div class="preview-row"><span>applications</span><strong>01</strong></div>
+          <div class="preview-row"><span>license policy</span><strong>one-time activation</strong></div>
+          <div class="preview-row"><span>device binding</span><strong class="preview-green">enabled</strong></div>
+          <div class="preview-result"><span class="checkmark">✓</span><div><strong>Your control plane is ready</strong><small>Create your first application below.</small></div></div>
+        </div>
+      </section>
+
+      <section id="auth" class="auth-layout">
+        <div class="auth-intro">
+          <div class="eyebrow">Start with the core</div>
+          <h2>Your developer<br /><span>workspace.</span></h2>
+          <p>Create an account to manage only your applications and licenses. Everything stays on this local LicenseStack server.</p>
+          <div class="intro-list">
+            <div><span>01</span><p>Register an application with its own API boundary.</p></div>
+            <div><span>02</span><p>Issue a license key for each customer or device.</p></div>
+            <div><span>03</span><p>Rotate keys, reset devices, or revoke access.</p></div>
+          </div>
+        </div>
+        <div class="form-card">
+          <div class="form-card-heading"><span class="card-kicker">DEVELOPER ACCESS</span><h2>Sign in or create an account</h2><p>Use your workspace credentials to continue.</p></div>
+          <div class="form-grid">
+            <label>Name<input id="name" autocomplete="name" placeholder="Your name" /></label>
+            <label>Email<input id="email" type="email" autocomplete="email" placeholder="you@example.com" /></label>
+          </div>
+          <label>Password<input id="password" type="password" autocomplete="current-password" placeholder="At least 10 characters" /></label>
+          <div class="form-actions"><button class="button" onclick="register()">Create account <span>↗</span></button><button class="button button-secondary" onclick="login()">Log in</button></div>
+        </div>
+      </section>
+
+      <section id="workspace" class="workspace" hidden>
+        <div class="workspace-heading"><div><div class="eyebrow"><span class="pulse"></span> Workspace overview</div><h2>Everything in <span>one place.</span></h2><p>Signed in as <strong id="who"></strong></p></div><button class="button button-secondary" onclick="logout()">Log out</button></div>
+        <div class="workspace-grid">
+          <article class="control-card card-lilac"><div class="card-kicker">01 · APPLICATIONS</div><h3>Register your app</h3><p>Give your product a clean ID and API boundary.</p><label>Application ID<input id="appId" placeholder="my-application" /></label><label>Application name<input id="appName" placeholder="My Application" /></label><div class="inline-actions"><button class="button" onclick="registerApp()">Register app <span>↗</span></button><button class="link-button" onclick="loadApps()">Refresh</button></div><pre id="appsOut">No applications loaded.</pre></article>
+          <article class="control-card card-blue"><div class="card-kicker">02 · LICENSES</div><h3>Issue customer access</h3><p>Create one-time keys and bind them on first activation.</p><label>Application ID<input id="licenseAppId" placeholder="my-application" /></label><label>Expiry <span class="label-hint">optional ISO-8601</span><input id="expiry" placeholder="2030-01-01T00:00:00+00:00" /></label><div class="inline-actions"><button class="button" onclick="createLicense()">Create license <span>↗</span></button><button class="link-button" onclick="loadLicenses()">Refresh</button></div><pre id="licensesOut">No licenses loaded.</pre></article>
+          <article class="control-card card-sand full-card"><div class="card-kicker">03 · KEY CONTROLS</div><h3>Stay in control</h3><p>Rotate or revoke an application API key when your product needs a change.</p><div class="control-row"><label>Application ID<input id="controlAppId" placeholder="my-application" /></label><div class="inline-actions"><button class="button" onclick="rotateKey()">Regenerate API key <span>↻</span></button><button class="button button-danger" onclick="revokeApp()">Revoke application</button></div></div></article>
+        </div>
+        <div class="output-card"><div class="output-heading"><span class="card-kicker">ACTIVITY OUTPUT</span><span>API response</span></div><pre id="out">Ready.</pre></div>
+      </section>
+    </main>
+
+    <footer class="site-footer shell dashboard-footer"><a class="brand" href="/"><span class="brand-mark"><span></span><span></span><span></span></span><span>LicenseStack</span></a><span class="footer-note">Universal licensing infrastructure · local development</span></footer>
+    <script src="dashboard.js"></script>
+  </body>
+</html>
