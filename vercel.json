@@ -1,0 +1,20 @@
+{
+  "rewrites": [
+    { "source": "/", "destination": "/site/dist/index.html" },
+    { "source": "/dashboard", "destination": "/site/dist/dashboard.html" },
+    { "source": "/dashboard/", "destination": "/site/dist/dashboard.html" },
+    { "source": "/login", "destination": "/site/dist/dashboard.html" },
+    { "source": "/login/", "destination": "/site/dist/dashboard.html" },
+    { "source": "/signup", "destination": "/site/dist/dashboard.html" },
+    { "source": "/signup/", "destination": "/site/dist/dashboard.html" },
+    { "source": "/docs", "destination": "/site/dist/docs.html" },
+    { "source": "/docs/", "destination": "/site/dist/docs.html" },
+    { "source": "/scan", "destination": "/site/dist/scan.html" },
+    { "source": "/scan/", "destination": "/site/dist/scan.html" },
+    { "source": "/pair", "destination": "/site/dist/scan.html" },
+    { "source": "/pair/", "destination": "/site/dist/scan.html" },
+    { "source": "/admin", "destination": "/site/dist/admin.html" },
+    { "source": "/admin/", "destination": "/site/dist/admin.html" },
+    { "source": "/(.*)", "destination": "/site/dist/$1" }
+  ]
+}

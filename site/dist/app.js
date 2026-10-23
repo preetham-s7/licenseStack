@@ -1,7 +1,7 @@
 const menuToggle = document.querySelector('.menu-toggle');
 const siteNav = document.querySelector('.site-nav');
 const toast = document.querySelector('.toast');
-const platformOrigin = window.LICENSE_PLATFORM_URL || (window.location.port === '8080' ? window.location.origin : 'http://127.0.0.1:8080');
+const platformOrigin = window.LICENSE_PLATFORM_URL || window.location.origin;
 
 document.querySelectorAll('[data-platform-route]').forEach((element) => {
   const route = element.dataset.platformRoute;
