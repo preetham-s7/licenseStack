@@ -1,1 +1,58 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8" /><meta name="viewport" content="width=device-width,initial-scale=1" /><title>API documentation — LicenseStack</title><link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin /><link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet" /><link rel="stylesheet" href="styles.css" /><link rel="stylesheet" href="dashboard.css" /><link rel="stylesheet" href="theme.css" /><link rel="stylesheet" href="docs.css" /></head><body class="dashboard-body"><header class="dashboard-header shell"><a class="brand" href="/"><span class="brand-mark"><span></span><span></span><span></span></span><span>LicenseStack</span></a><div class="dashboard-header-actions"><span class="local-badge"><span></span> Local API</span><button class="theme-toggle" type="button" data-theme-toggle>Dark mode</button><a class="dashboard-home-link" href="/dashboard">Dashboard <span>↗</span></a></div></header><main class="dashboard-shell"><section class="docs-hero"><div class="eyebrow"><span class="pulse"></span> Developer documentation</div><h1>Build access into<br /><em>your product.</em></h1><p>Simple REST endpoints for application registration, one-time activation, device binding, and license validation.</p><div class="workspace-pills"><span>BASE URL · 127.0.0.1:8080</span><span>JSON</span><span>REST</span></div></section><div class="docs-layout"><nav class="docs-nav"><strong>On this page</strong><a href="#quickstart">Quickstart</a><a href="#activate">Activate a license</a><a href="#validate">Validate a token</a><a href="#manage">Manage licenses</a><a href="#errors">Errors</a></nav><div class="docs-content"><article id="quickstart" class="docs-card"><div class="card-kicker">QUICKSTART</div><h2>Connect your application</h2><p>Use your application ID and a customer license key. Activation binds the license to the first device fingerprint that uses it.</p><pre class="docs-code">POST http://127.0.0.1:8080/v1/activate\nContent-Type: application/json\n\n{\n  "app_id": "your-application",\n  "license_key": "LIC-...",\n  "device_id": "your-stable-device-id",\n  "device_label": "Design workstation"\n}</pre></article><article id="activate" class="docs-card"><div class="card-kicker">POST · /v1/activate</div><h2>Activate a license</h2><p>The first successful activation grants access and returns a signed token. Repeating activation on the same device is safe; another device is rejected.</p><pre class="docs-code">{\n  "ok": true,\n  "token": "signed-license-token",\n  "status": "active"\n}</pre></article><article id="validate" class="docs-card"><div class="card-kicker">POST · /v1/validate</div><h2>Validate a token</h2><p>Call validation when your application starts or when it needs to confirm current access.</p><pre class="docs-code">{\n  "app_id": "your-application",\n  "token": "signed-license-token",\n  "device_id": "your-stable-device-id"\n}</pre></article><article id="manage" class="docs-card"><div class="card-kicker">MANAGEMENT</div><h2>Manage licenses</h2><p>Developer and admin dashboards can create, list, reset, and revoke licenses. Management routes require the correct developer session or API key.</p><div class="endpoint-list"><div><code>POST /v1/developer/licenses</code><span>Create a license</span></div><div><code>GET /v1/developer/licenses</code><span>List your licenses</span></div><div><code>POST /v1/licenses/{key}/reset</code><span>Reset a device binding</span></div><div><code>POST /v1/licenses/{key}/revoke</code><span>Revoke access</span></div></div></article><article id="errors" class="docs-card"><div class="card-kicker">ERRORS</div><h2>Predictable responses</h2><p>Errors use a stable JSON shape with a machine-readable code and a human-readable message.</p><pre class="docs-code">{\n  "error": {\n    "code": "LICENSE_BOUND",\n    "message": "This license is already bound to another device."\n  }\n}</pre></article></div></div></main><footer class="site-footer shell dashboard-footer"><a class="brand" href="/"><span class="brand-mark"><span></span><span></span><span></span></span><span>LicenseStack</span></a><span class="footer-note">Universal licensing infrastructure · local development</span></footer><script src="theme.js"></script></body></html>
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>API documentation — LicenseStack</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="/styles.css" />
+    <link rel="stylesheet" href="/dashboard.css" />
+    <link rel="stylesheet" href="/theme.css" />
+    <link rel="stylesheet" href="/docs.css" />
+  </head>
+  <body class="dashboard-body">
+    <header class="dashboard-header shell">
+      <a class="brand" href="/" aria-label="LicenseStack home"><span class="brand-mark"><span></span><span></span><span></span></span><span>LicenseStack</span></a>
+      <div class="dashboard-header-actions"><span class="local-badge"><span></span> Local API</span><button class="theme-toggle" type="button" data-theme-toggle>Dark mode</button><a class="dashboard-home-link" href="/dashboard">Dashboard <span>↗</span></a></div>
+    </header>
+    <main class="dashboard-shell">
+      <section class="docs-hero"><div class="eyebrow"><span class="pulse"></span> Developer documentation</div><h1>Build access into<br /><em>your product.</em></h1><p>Simple REST endpoints for application registration, one-time activation, device binding, and license validation.</p><div class="workspace-pills"><span>BASE URL · 127.0.0.1:8080</span><span>JSON</span><span>REST</span></div></section>
+      <div class="docs-layout">
+        <nav class="docs-nav"><strong>On this page</strong><a href="#quickstart">Quickstart</a><a href="#app-key">Create an API key</a><a href="#activate">Activate a license</a><a href="#validate">Validate a token</a><a href="#manage">Manage licenses</a><a href="#errors">Errors</a></nav>
+        <div class="docs-content">
+          <article id="quickstart" class="docs-card"><div class="card-kicker">QUICKSTART</div><h2>Connect your application</h2><p>Open the <a href="/dashboard">developer dashboard</a>, create an account, register your application, and keep the returned API key on your server. Customer license keys are separate from developer API keys.</p><pre class="docs-code">POST http://127.0.0.1:8080/v1/activate
+Content-Type: application/json
+
+{
+  "app_id": "your-application",
+  "license_key": "LIC-...",
+  "device_id": "your-stable-device-id",
+  "device_label": "Design workstation"
+}</pre></article>
+          <article id="app-key" class="docs-card"><div class="card-kicker">DASHBOARD FLOW</div><h2>Create your application API key</h2><p>Register your app once in the dashboard. The response contains an API key for management requests. Store it in a server-side secret manager, never in a browser or public repository. Use “Regenerate API key” if it is exposed; the previous key stops working.</p><div class="endpoint-list"><div><code>POST /v1/developer/apps</code><span>Register an app and issue its key</span></div><div><code>POST /v1/developer/apps/{app_id}/rotate-key</code><span>Regenerate the key</span></div><div><code>POST /v1/developer/apps/{app_id}/revoke</code><span>Disable the app boundary</span></div></div></article>
+          <article id="activate" class="docs-card"><div class="card-kicker">POST · /v1/activate</div><h2>Activate a license</h2><p>The first successful activation grants access and returns a signed token. Repeating activation on the same device is safe; another device is rejected.</p><pre class="docs-code">{
+  "license_id": "customer-license-id",
+  "token": "signed-license-token",
+  "status": "active"
+}</pre></article>
+          <article id="validate" class="docs-card"><div class="card-kicker">POST · /v1/validate</div><h2>Validate a token</h2><p>Call validation when your application starts or when it needs to confirm current access.</p><pre class="docs-code">{
+  "app_id": "your-application",
+  "token": "signed-license-token",
+  "device_id": "your-stable-device-id"
+}</pre></article>
+          <article id="manage" class="docs-card"><div class="card-kicker">MANAGEMENT</div><h2>Manage licenses</h2><p>Developer and admin dashboards can create, list, reset, and revoke licenses. Management routes require the correct developer session or API key.</p><div class="endpoint-list"><div><code>GET /v1/customers?app_id={app_id}</code><span>List your app’s customers using X-API-Key</span></div><div><code>POST /v1/customers</code><span>Create a customer (app_id, name, email, notes)</span></div><div><code>POST /v1/licenses</code><span>Issue a customer license (app_id, customer_id, plan, expires_at)</span></div><div><code>POST /v1/license-records/{id}/revoke</code><span>Revoke customer access using X-API-Key and app_id</span></div><div><code>POST /v1/license-records/{id}/restore</code><span>Restore access and require activation again</span></div><div><code>POST /v1/license-records/{id}/update</code><span>Change plan or expiry using app_id, plan, expires_at</span></div><div><code>POST /v1/developer/licenses</code><span>Create a license</span></div><div><code>GET /v1/developer/licenses</code><span>List your licenses</span></div><div><code>POST /v1/licenses/{key}/reset</code><span>Reset a device binding</span></div><div><code>POST /v1/licenses/{key}/revoke</code><span>Revoke access</span></div></div></article>
+          <article id="errors" class="docs-card"><div class="card-kicker">ERRORS</div><h2>Predictable responses</h2><p>Errors use a stable JSON shape with a machine-readable code and a human-readable message.</p><pre class="docs-code">{
+  "error": {
+    "code": "LICENSE_BOUND",
+    "message": "This license is already bound to another device."
+  }
+}</pre></article>
+        </div>
+      </div>
+    </main>
+    <footer class="site-footer shell dashboard-footer"><a class="brand" href="/"><span class="brand-mark"><span></span><span></span><span></span></span><span>LicenseStack</span></a><span class="footer-note">Universal licensing infrastructure · local development</span></footer>
+    <script src="/theme.js"></script>
+  </body>
+</html>

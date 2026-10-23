@@ -14,6 +14,30 @@ X-API-Key: <application-api-key>
 
 An application API key is restricted to its own `app_id`.
 
+## Developer dashboard and customers
+
+Open `/signup` to create a developer account or `/login` to sign in. The dashboard guides you through registering an application, saving its API key, adding customers, and issuing licenses. Click a customer name to view their licenses, change a plan or expiry, revoke or restore access, reset a device, and see activity.
+
+The API key authenticates your server; it does not contain customer data. Customer software uses a separate license key for device activation. Keep management API keys on your server.
+
+These customer routes require `X-API-Key` for the selected application (or the admin token):
+
+| Method | Route | Input |
+| --- | --- | --- |
+| GET | `/v1/customers?app_id=your-app` | List customer profiles and access counts |
+| POST | `/v1/customers` | `app_id`, `name`, `email`, optional `notes` |
+| GET | `/v1/customers/{id}?app_id=your-app` | Customer, licenses, and recent activity |
+| POST | `/v1/customers/{id}/update` | `app_id`, `name`, `email`, `notes` |
+| POST | `/v1/licenses` | `app_id`, optional `customer_id`, `plan`, `expires_at` |
+| POST | `/v1/license-records/{id}/update` | `app_id`, `plan`, `expires_at` (null removes expiry) |
+| POST | `/v1/license-records/{id}/revoke` | `app_id` |
+| POST | `/v1/license-records/{id}/restore` | `app_id` |
+| POST | `/v1/license-records/{id}/reset` | `app_id` |
+
+Developer-session equivalents use `/v1/developer/customers` and `/v1/developer/license-records`, with `Authorization: Bearer <session_token>`. Every operation checks application ownership. Customer IDs cannot be used across applications.
+
+Changing a plan or expiry invalidates previous tokens; the same device can activate again to refresh its token. Revocation stops the next online validation and activation. Restore and device reset clear the old binding and invalidate old tokens, allowing a new activation. Disabling an application stops both management API-key access and customer activation/validation. Raw API keys and customer license keys are returned only at creation or key regeneration, never in lists.
+
 ## Register an application
 
 ```http

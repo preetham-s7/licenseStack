@@ -77,6 +77,14 @@ class LicenseRequestHandler(BaseHTTPRequestHandler):
     def _ip(self) -> str:
         return self.client_address[0] if self.client_address else ""
 
+    def _customer_scope(self, app_id: str, developer_route: bool) -> None:
+        if not app_id:
+            raise LicenseError("APP_REQUIRED", "Choose an application.")
+        if developer_route:
+            self._service().assert_application_owner(app_id, self._require_developer()["id"])
+        else:
+            self._require_app_or_admin(app_id)
+
     def _serve_static(self, request_path: str) -> bool:
         """Serve the local product site when the API server is used directly."""
         root = getattr(self.server, "static_root", None)  # type: ignore[attr-defined]
@@ -119,7 +127,7 @@ class LicenseRequestHandler(BaseHTTPRequestHandler):
             if parsed.path == "/admin":
                 self._admin_page()
                 return
-            if parsed.path == "/dashboard":
+            if parsed.path.rstrip("/") in {"/dashboard", "/login", "/signup"}:
                 self._developer_page()
                 return
             if parsed.path.rstrip("/") == "/docs":
@@ -127,6 +135,17 @@ class LicenseRequestHandler(BaseHTTPRequestHandler):
                     return
             if parsed.path == "/v1/me":
                 self._json(200, {"developer": self._require_developer()})
+                return
+            if parsed.path.startswith(("/v1/developer/customers", "/v1/customers")):
+                developer_route = parsed.path.startswith("/v1/developer/")
+                prefix = "/v1/developer/customers" if developer_route else "/v1/customers"
+                app_id = parse_qs(parsed.query).get("app_id", [""])[0]
+                self._customer_scope(app_id, developer_route)
+                suffix = unquote(parsed.path[len(prefix):]).strip("/")
+                if not suffix:
+                    self._json(200, {"customers": self._service().list_customers(app_id)})
+                else:
+                    self._json(200, self._service().customer_detail(app_id, suffix))
                 return
             if parsed.path == "/v1/developer/apps":
                 developer = self._require_developer()
@@ -173,6 +192,29 @@ class LicenseRequestHandler(BaseHTTPRequestHandler):
                 self._service().logout_developer(self._developer_token())
                 self._json(200, {"ok": True})
                 return
+            if parsed.path.startswith(("/v1/developer/customers", "/v1/customers")):
+                developer_route = parsed.path.startswith("/v1/developer/")
+                prefix = "/v1/developer/customers" if developer_route else "/v1/customers"
+                app_id = data.get("app_id", "")
+                self._customer_scope(app_id, developer_route)
+                suffix = unquote(parsed.path[len(prefix):]).strip("/")
+                if not suffix:
+                    self._json(201, self._service().create_customer(app_id, data))
+                elif suffix.endswith("/update"):
+                    self._json(200, self._service().update_customer(app_id, suffix.rsplit("/", 1)[0], data))
+                else:
+                    raise LicenseError("NOT_FOUND", "Unknown customer action.", 404)
+                return
+            if parsed.path.startswith(("/v1/developer/license-records/", "/v1/license-records/")):
+                developer_route = parsed.path.startswith("/v1/developer/")
+                prefix = "/v1/developer/license-records/" if developer_route else "/v1/license-records/"
+                app_id = data.get("app_id", "")
+                self._customer_scope(app_id, developer_route)
+                parts = unquote(parsed.path[len(prefix):]).split("/")
+                if len(parts) != 2:
+                    raise LicenseError("NOT_FOUND", "Unknown license action.", 404)
+                self._json(200, self._service().manage_license_record(app_id, parts[0], parts[1], data))
+                return
             if parsed.path == "/v1/developer/apps":
                 developer = self._require_developer()
                 result = self._service().create_application(data.get("app_id", ""), data.get("name", ""), developer["id"])
@@ -180,7 +222,7 @@ class LicenseRequestHandler(BaseHTTPRequestHandler):
                 return
             if parsed.path == "/v1/developer/licenses":
                 developer = self._require_developer()
-                result = self._service().create_license_for_developer(data.get("app_id", ""), developer["id"], data.get("expires_at"), data.get("metadata"))
+                result = self._service().create_license_for_developer(data.get("app_id", ""), developer["id"], data.get("expires_at"), data.get("metadata"), data.get("customer_id"), data.get("plan", "Standard"))
                 self._json(201, result)
                 return
             if parsed.path.startswith("/v1/developer/apps/"):
@@ -213,7 +255,7 @@ class LicenseRequestHandler(BaseHTTPRequestHandler):
             if parsed.path == "/v1/licenses":
                 app_id = data.get("app_id", "")
                 self._require_app_or_admin(app_id)
-                result = self._service().create_license(data.get("app_id", ""), data.get("expires_at"), data.get("metadata"))
+                result = self._service().create_license(data.get("app_id", ""), data.get("expires_at"), data.get("metadata"), data.get("customer_id"), data.get("plan", "Standard"))
                 self._json(201, result)
                 return
             if parsed.path == "/v1/apps":

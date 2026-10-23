@@ -201,6 +201,15 @@ class LicenseService:
             application_columns = {row["name"] for row in connection.execute("PRAGMA table_info(applications)").fetchall()}
             if "developer_id" not in application_columns:
                 connection.execute("ALTER TABLE applications ADD COLUMN developer_id TEXT")
+            connection.execute("""CREATE TABLE IF NOT EXISTS customers (
+                id TEXT PRIMARY KEY, app_id TEXT NOT NULL, name TEXT NOT NULL,
+                email TEXT NOT NULL, notes TEXT NOT NULL DEFAULT '', created_at TEXT NOT NULL,
+                UNIQUE(app_id, email), FOREIGN KEY(app_id) REFERENCES applications(app_id))""")
+            license_columns = {row["name"] for row in connection.execute("PRAGMA table_info(licenses)")}
+            for column, definition in {"customer_id": "TEXT", "plan": "TEXT NOT NULL DEFAULT 'Standard'",
+                                       "version": "INTEGER NOT NULL DEFAULT 0"}.items():
+                if column not in license_columns:
+                    connection.execute(f"ALTER TABLE licenses ADD COLUMN {column} {definition}")
 
     @staticmethod
     def _developer_public(row: sqlite3.Row) -> dict[str, Any]:
@@ -360,8 +369,11 @@ class LicenseService:
             raise LicenseError("INVALID_EXPIRY", "expires_at must be an ISO-8601 timestamp.") from exc
 
     def create_license(self, app_id: str, expires_at: Optional[str] = None,
-                       metadata: Optional[dict[str, Any]] = None) -> dict[str, Any]:
+                       metadata: Optional[dict[str, Any]] = None, customer_id: Optional[str] = None,
+                       plan: str = "Standard") -> dict[str, Any]:
         self._validate_app_id(app_id)
+        if not isinstance(plan, str) or not plan.strip() or len(plan) > 80:
+            raise LicenseError("INVALID_PLAN", "Plan must contain 1 to 80 characters.")
         expiry = self._expiry_timestamp(expires_at)
         if expiry is not None and expiry <= int(time.time()):
             raise LicenseError("INVALID_EXPIRY", "expires_at must be in the future.")
@@ -371,20 +383,23 @@ class LicenseService:
             license_id = str(uuid.uuid4())
             try:
                 with self._session() as connection:
+                    if customer_id and not connection.execute("SELECT 1 FROM customers WHERE id=? AND app_id=?", (customer_id, app_id)).fetchone():
+                        raise LicenseError("CUSTOMER_NOT_FOUND", "Customer does not belong to this application.", 404)
                     connection.execute(
-                        "INSERT INTO licenses(id, app_id, key_hash, key_prefix, status, created_at, expires_at) VALUES (?, ?, ?, ?, 'unused', ?, ?)",
-                        (license_id, app_id, _key_hash(key, self.secret), key[:8], created_at, expires_at),
+                        "INSERT INTO licenses(id, app_id, key_hash, key_prefix, status, created_at, expires_at, customer_id, plan) VALUES (?, ?, ?, ?, 'unused', ?, ?, ?, ?)",
+                        (license_id, app_id, _key_hash(key, self.secret), key[:8], created_at, expires_at, customer_id, plan.strip()),
                     )
                     self._audit(connection, license_id, "created", None, None, metadata)
-                return {"id": license_id, "app_id": app_id, "license_key": key, "status": "unused", "created_at": created_at, "expires_at": expires_at}
+                return {"id": license_id, "app_id": app_id, "license_key": key, "status": "unused", "created_at": created_at, "expires_at": expires_at, "customer_id": customer_id, "plan": plan.strip()}
             except sqlite3.IntegrityError:
                 continue
         raise LicenseError("KEY_GENERATION_FAILED", "Could not generate a unique license key.", 500)
 
     def create_license_for_developer(self, app_id: str, developer_id: str, expires_at: Optional[str] = None,
-                                     metadata: Optional[dict[str, Any]] = None) -> dict[str, Any]:
+                                     metadata: Optional[dict[str, Any]] = None, customer_id: Optional[str] = None,
+                                     plan: str = "Standard") -> dict[str, Any]:
         self.assert_application_owner(app_id, developer_id)
-        return self.create_license(app_id, expires_at, metadata)
+        return self.create_license(app_id, expires_at, metadata, customer_id, plan)
 
     def _find_by_key(self, connection: sqlite3.Connection, license_key: str) -> Optional[sqlite3.Row]:
         return connection.execute("SELECT * FROM licenses WHERE key_hash = ?", (_key_hash(license_key, self.secret),)).fetchone()
@@ -399,6 +414,9 @@ class LicenseService:
             if record is None or record["app_id"] != app_id:
                 self._audit(connection, None, "activation_rejected", ip_address, hashed_device, {"reason": "unknown_key"})
                 raise LicenseError("INVALID_LICENSE", "The license key is invalid for this application.", 403)
+            app = connection.execute("SELECT status FROM applications WHERE app_id=?", (app_id,)).fetchone()
+            if app and app["status"] != "active":
+                raise LicenseError("APP_REVOKED", "This application is disabled.", 403)
             if record["expires_at"] and self._expiry_timestamp(record["expires_at"]) <= int(time.time()):
                 self._audit(connection, record["id"], "activation_rejected", ip_address, hashed_device, {"reason": "expired"})
                 raise LicenseError("LICENSE_EXPIRED", "The license has expired.", 403)
@@ -424,6 +442,7 @@ class LicenseService:
                 "device_hash": hashed_device,
                 "iat": int(time.time()),
                 "exp": self._expiry_timestamp(record["expires_at"]),
+                "version": record["version"],
             }
             token = _signed_token(payload, self.secret)
             return {"license_id": record["id"], "app_id": app_id, "status": "active", "token": token, "expires_at": record["expires_at"]}
@@ -437,6 +456,11 @@ class LicenseService:
             record = connection.execute("SELECT * FROM licenses WHERE id=?", (payload.get("license_id"),)).fetchone()
             if record is None or record["app_id"] != app_id:
                 raise LicenseError("INVALID_LICENSE", "The license no longer exists.", 403)
+            app = connection.execute("SELECT status FROM applications WHERE app_id=?", (app_id,)).fetchone()
+            if app and app["status"] != "active":
+                raise LicenseError("APP_REVOKED", "This application is disabled.", 403)
+            if payload.get("version", 0) != record["version"]:
+                raise LicenseError("TOKEN_OUTDATED", "Access changed. Activate again to refresh this license.", 403)
             if record["status"] != "active":
                 raise LicenseError("LICENSE_INACTIVE", "The license is not active.", 403)
             if record["device_hash"] != payload["device_hash"]:
@@ -446,7 +470,7 @@ class LicenseService:
             now = utc_now()
             connection.execute("UPDATE licenses SET last_seen_at=? WHERE id=?", (now, record["id"]))
             self._audit(connection, record["id"], "validated", ip_address, payload["device_hash"])
-            return {"valid": True, "license_id": record["id"], "app_id": app_id, "expires_at": record["expires_at"]}
+            return {"valid": True, "license_id": record["id"], "app_id": app_id, "expires_at": record["expires_at"], "plan": record["plan"], "customer_id": record["customer_id"]}
 
     def reset(self, license_key: str, app_id: Optional[str] = None, ip_address: Optional[str] = None, developer_id: Optional[str] = None) -> dict[str, Any]:
         with self._session() as connection:
@@ -457,7 +481,7 @@ class LicenseService:
                 raise LicenseError("APP_ACCESS_DENIED", "This license belongs to another application.", 403)
             if developer_id and not self._application_owned(connection, record["app_id"], developer_id):
                 raise LicenseError("APP_ACCESS_DENIED", "You do not have access to this application.", 403)
-            connection.execute("UPDATE licenses SET status='unused', activated_at=NULL, device_hash=NULL, device_label=NULL, last_seen_at=NULL WHERE id=?", (record["id"],))
+            connection.execute("UPDATE licenses SET status='unused', activated_at=NULL, device_hash=NULL, device_label=NULL, last_seen_at=NULL, version=version+1 WHERE id=?", (record["id"],))
             self._audit(connection, record["id"], "reset", ip_address, None)
             return {"license_id": record["id"], "status": "unused"}
 
@@ -470,7 +494,7 @@ class LicenseService:
                 raise LicenseError("APP_ACCESS_DENIED", "This license belongs to another application.", 403)
             if developer_id and not self._application_owned(connection, record["app_id"], developer_id):
                 raise LicenseError("APP_ACCESS_DENIED", "You do not have access to this application.", 403)
-            connection.execute("UPDATE licenses SET status='revoked' WHERE id=?", (record["id"],))
+            connection.execute("UPDATE licenses SET status='revoked', version=version+1 WHERE id=?", (record["id"],))
             self._audit(connection, record["id"], "revoked", ip_address, record["device_hash"])
             return {"license_id": record["id"], "status": "revoked"}
 
@@ -483,7 +507,7 @@ class LicenseService:
             return [
                 {"id": row["id"], "app_id": row["app_id"], "key_prefix": row["key_prefix"], "status": row["status"],
                  "created_at": row["created_at"], "activated_at": row["activated_at"], "expires_at": row["expires_at"],
-                 "device_label": row["device_label"], "last_seen_at": row["last_seen_at"]}
+                 "device_label": row["device_label"], "last_seen_at": row["last_seen_at"], "customer_id": row["customer_id"], "plan": row["plan"]}
                 for row in rows
             ]
 
@@ -498,6 +522,88 @@ class LicenseService:
             return [
                 {"id": row["id"], "app_id": row["app_id"], "key_prefix": row["key_prefix"], "status": row["status"],
                  "created_at": row["created_at"], "activated_at": row["activated_at"], "expires_at": row["expires_at"],
-                 "device_label": row["device_label"], "last_seen_at": row["last_seen_at"]}
+                 "device_label": row["device_label"], "last_seen_at": row["last_seen_at"], "customer_id": row["customer_id"], "plan": row["plan"]}
                 for row in rows
             ]
+
+    @staticmethod
+    def _customer_fields(data: dict) -> tuple[str, str, str]:
+        name, email, notes = data.get("name", ""), data.get("email", ""), data.get("notes", "")
+        if not isinstance(name, str) or not name.strip() or len(name) > 120:
+            raise LicenseError("INVALID_NAME", "Enter a customer name (up to 120 characters).")
+        if not isinstance(email, str) or len(email) > 254 or not EMAIL_PATTERN.fullmatch(email.strip()):
+            raise LicenseError("INVALID_EMAIL", "Enter a valid customer email.")
+        if not isinstance(notes, str) or len(notes) > 4000:
+            raise LicenseError("INVALID_NOTES", "Notes must be at most 4000 characters.")
+        return name.strip(), email.strip().lower(), notes.strip()
+
+    def create_customer(self, app_id: str, data: dict) -> dict:
+        name, email, notes = self._customer_fields(data)
+        customer_id, created = str(uuid.uuid4()), utc_now()
+        try:
+            with self._session() as connection:
+                app = connection.execute("SELECT status FROM applications WHERE app_id=?", (app_id,)).fetchone()
+                if not app or app["status"] != "active":
+                    raise LicenseError("APP_ACCESS_DENIED", "Choose an active application.", 403)
+                connection.execute("INSERT INTO customers(id,app_id,name,email,notes,created_at) VALUES (?,?,?,?,?,?)",
+                                   (customer_id, app_id, name, email, notes, created))
+        except sqlite3.IntegrityError as exc:
+            raise LicenseError("CUSTOMER_EXISTS", "A customer with this email already exists in this app.", 409) from exc
+        return {"id": customer_id, "app_id": app_id, "name": name, "email": email, "notes": notes, "created_at": created}
+
+    def list_customers(self, app_id: str) -> list[dict]:
+        with self._session() as connection:
+            rows = connection.execute("""SELECT c.*, COUNT(l.id) AS license_count,
+                COALESCE(SUM(CASE WHEN l.status!='revoked' AND (l.expires_at IS NULL OR l.expires_at>?) THEN 1 ELSE 0 END),0) AS access_count,
+                MAX(l.last_seen_at) AS last_seen_at FROM customers c
+                LEFT JOIN licenses l ON l.customer_id=c.id WHERE c.app_id=?
+                GROUP BY c.id ORDER BY c.created_at DESC, c.name""", (utc_now(), app_id)).fetchall()
+            return [dict(row) for row in rows]
+
+    def customer_detail(self, app_id: str, customer_id: str) -> dict:
+        with self._session() as connection:
+            customer = connection.execute("SELECT * FROM customers WHERE id=? AND app_id=?", (customer_id, app_id)).fetchone()
+            if not customer:
+                raise LicenseError("CUSTOMER_NOT_FOUND", "Customer was not found in this app.", 404)
+            events = connection.execute("""SELECT e.id,e.event_type,e.created_at,e.ip_address,l.key_prefix
+                FROM audit_events e JOIN licenses l ON l.id=e.license_id
+                WHERE l.customer_id=? AND l.app_id=? ORDER BY e.id DESC LIMIT 50""", (customer_id, app_id)).fetchall()
+        return {"customer": dict(customer), "licenses": [l for l in self.list_licenses(app_id) if l["customer_id"] == customer_id],
+                "events": [dict(row) for row in events]}
+
+    def update_customer(self, app_id: str, customer_id: str, data: dict) -> dict:
+        name, email, notes = self._customer_fields(data)
+        try:
+            with self._session() as connection:
+                updated = connection.execute("UPDATE customers SET name=?,email=?,notes=? WHERE id=? AND app_id=?",
+                                             (name, email, notes, customer_id, app_id))
+                if not updated.rowcount:
+                    raise LicenseError("CUSTOMER_NOT_FOUND", "Customer was not found in this app.", 404)
+        except sqlite3.IntegrityError as exc:
+            raise LicenseError("CUSTOMER_EXISTS", "A customer with this email already exists in this app.", 409) from exc
+        return self.customer_detail(app_id, customer_id)
+
+    def manage_license_record(self, app_id: str, license_id: str, action: str, data: dict) -> dict:
+        """Manage by record ID so dashboard users need not retain raw license keys."""
+        with self._session() as connection:
+            record = connection.execute("SELECT * FROM licenses WHERE id=? AND app_id=?", (license_id, app_id)).fetchone()
+            if not record:
+                raise LicenseError("INVALID_LICENSE", "License was not found in this app.", 404)
+            if action == "update":
+                plan = data.get("plan", record["plan"])
+                expiry = data.get("expires_at", record["expires_at"])
+                if not isinstance(plan, str) or not plan.strip() or len(plan) > 80:
+                    raise LicenseError("INVALID_PLAN", "Plan must contain 1 to 80 characters.")
+                timestamp = self._expiry_timestamp(expiry)
+                if timestamp is not None and timestamp <= int(time.time()):
+                    raise LicenseError("INVALID_EXPIRY", "Choose a future expiry date.")
+                connection.execute("UPDATE licenses SET plan=?,expires_at=?,version=version+1 WHERE id=?", (plan.strip(), expiry, license_id))
+            elif action == "revoke":
+                connection.execute("UPDATE licenses SET status='revoked',version=version+1 WHERE id=?", (license_id,))
+            elif action in {"reset", "restore"}:
+                connection.execute("""UPDATE licenses SET status='unused',activated_at=NULL,device_hash=NULL,
+                    device_label=NULL,last_seen_at=NULL,version=version+1 WHERE id=?""", (license_id,))
+            else:
+                raise LicenseError("INVALID_ACTION", "Unknown license action.", 404)
+            self._audit(connection, license_id, action, None, None, {"plan": data.get("plan")})
+        return next(l for l in self.list_licenses(app_id) if l["id"] == license_id)

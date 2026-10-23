@@ -1,87 +1,37 @@
 <!doctype html>
 <html lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="description" content="Local LicenseStack developer workspace." />
-    <title>Developer workspace — LicenseStack</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet" />
-    <link rel="stylesheet" href="styles.css" />
-    <link rel="stylesheet" href="dashboard.css" />
-    <link rel="stylesheet" href="theme.css" />
-  </head>
-  <body class="dashboard-body">
-    <div class="ambient ambient-one"></div>
-    <div class="ambient ambient-two"></div>
-
-    <header class="dashboard-header shell">
-      <a class="brand" href="/" aria-label="LicenseStack home">
-        <span class="brand-mark"><span></span><span></span><span></span></span>
-        <span>LicenseStack</span>
-      </a>
-      <div class="dashboard-header-actions">
-        <span class="local-badge"><span></span> Local workspace</span>
-        <button class="theme-toggle" type="button" data-theme-toggle aria-label="Switch to dark theme">Dark mode</button>
-        <a class="dashboard-home-link" href="/docs.html">Docs <span>↗</span></a>
-        <a class="dashboard-home-link" href="/">Back to homepage <span>↗</span></a>
-      </div>
-    </header>
-
-    <main class="dashboard-shell">
-      <section class="dashboard-hero">
-        <div>
-          <div class="eyebrow"><span class="pulse"></span> Developer workspace</div>
-          <h1>Build with confidence.<br /><em>Control access.</em></h1>
-          <p>Register applications, issue one-time licenses, and manage trusted devices from one focused workspace.</p>
-          <div class="workspace-pills"><span>REST API</span><span>Device-bound</span><span>Local-first</span></div>
-        </div>
-        <div class="workspace-preview" aria-hidden="true">
-          <div class="preview-topline"><span class="status-dot"></span> WORKSPACE STATUS <span>READY</span></div>
-          <div class="preview-row"><span>applications</span><strong>01</strong></div>
-          <div class="preview-row"><span>license policy</span><strong>one-time activation</strong></div>
-          <div class="preview-row"><span>device binding</span><strong class="preview-green">enabled</strong></div>
-          <div class="preview-result"><span class="checkmark">✓</span><div><strong>Your control plane is ready</strong><small>Create your first application below.</small></div></div>
-        </div>
-      </section>
-
-      <section id="auth" class="auth-layout">
-        <div class="auth-intro">
-          <div class="eyebrow">Start with the core</div>
-          <h2>Your developer<br /><span>workspace.</span></h2>
-          <p>Create an account to manage only your applications and licenses. Everything stays on this local LicenseStack server.</p>
-          <div class="intro-list">
-            <div><span>01</span><p>Register an application with its own API boundary.</p></div>
-            <div><span>02</span><p>Issue a license key for each customer or device.</p></div>
-            <div><span>03</span><p>Rotate keys, reset devices, or revoke access.</p></div>
-          </div>
-        </div>
-        <div class="form-card">
-          <div class="form-card-heading"><span class="card-kicker">DEVELOPER ACCESS</span><h2>Sign in or create an account</h2><p>Use your workspace credentials to continue.</p></div>
-          <div class="form-grid">
-            <label>Name<input id="name" autocomplete="name" placeholder="Your name" /></label>
-            <label>Email<input id="email" type="email" autocomplete="email" placeholder="you@example.com" /></label>
-          </div>
-          <label>Password<input id="password" type="password" autocomplete="current-password" placeholder="At least 10 characters" /></label>
-          <div class="form-actions"><button class="button" type="button" onclick="register()">Create account <span>↗</span></button><button class="button button-secondary" type="button" onclick="login()">Log in</button></div>
-          <div class="output-card auth-feedback" aria-live="polite"><div class="output-heading"><span class="card-kicker">STATUS</span><span>Workspace response</span></div><pre id="authOut">Ready.</pre></div>
-        </div>
-      </section>
-
-      <section id="workspace" class="workspace" hidden>
-        <div class="workspace-heading"><div><div class="eyebrow"><span class="pulse"></span> Workspace overview</div><h2>Everything in <span>one place.</span></h2><p>Signed in as <strong id="who"></strong></p></div><button class="button button-secondary" type="button" onclick="logout()">Log out</button></div>
-        <div class="workspace-grid">
-          <article class="control-card card-lilac"><div class="card-kicker">01 · APPLICATIONS</div><h3>Register your app</h3><p>Give your product a clean ID and API boundary.</p><label>Application ID<input id="appId" placeholder="my-application" /></label><label>Application name<input id="appName" placeholder="My Application" /></label><div class="inline-actions"><button class="button" type="button" onclick="registerApp()">Register app <span>↗</span></button><button class="link-button" type="button" onclick="loadApps()">Refresh</button></div><pre id="appsOut">No applications loaded.</pre></article>
-          <article class="control-card card-blue"><div class="card-kicker">02 · LICENSES</div><h3>Issue customer access</h3><p>Create one-time keys and bind them on first activation.</p><label>Application ID<input id="licenseAppId" placeholder="my-application" /></label><label>Expiry <span class="label-hint">optional ISO-8601</span><input id="expiry" placeholder="2030-01-01T00:00:00+00:00" /></label><div class="inline-actions"><button class="button" type="button" onclick="createLicense()">Create license <span>↗</span></button><button class="link-button" type="button" onclick="loadLicenses()">Refresh</button></div><pre id="licensesOut">No licenses loaded.</pre></article>
-          <article class="control-card card-sand full-card"><div class="card-kicker">03 · KEY CONTROLS</div><h3>Stay in control</h3><p>Rotate or revoke an application API key when your product needs a change.</p><div class="control-row"><label>Application ID<input id="controlAppId" placeholder="my-application" /></label><div class="inline-actions"><button class="button" type="button" onclick="rotateKey()">Regenerate API key <span>↻</span></button><button class="button button-danger" type="button" onclick="revokeApp()">Revoke application</button></div></div></article>
-        </div>
-        <div class="output-card"><div class="output-heading"><span class="card-kicker">ACTIVITY OUTPUT</span><span>API response</span></div><pre id="out">Ready.</pre></div>
-      </section>
-    </main>
-
-    <footer class="site-footer shell dashboard-footer"><a class="brand" href="/"><span class="brand-mark"><span></span><span></span><span></span></span><span>LicenseStack</span></a><span class="footer-note">Universal licensing infrastructure · local development</span></footer>
-    <script src="theme.js"></script>
-    <script src="dashboard.js"></script>
-  </body>
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Workspace — LicenseStack</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/styles.css"><link rel="stylesheet" href="/theme.css"><link rel="stylesheet" href="/workspace.css">
+</head>
+<body class="product-body">
+  <header class="product-header">
+    <a class="brand" href="/" aria-label="LicenseStack home"><span class="brand-mark"><span></span><span></span><span></span></span>LicenseStack</a>
+    <div class="header-links"><a href="/docs">Documentation ↗</a><button class="theme-toggle" type="button" data-theme-toggle>Dark mode</button><button id="mobileLogout" class="quiet mobile-logout" type="button" hidden>Sign out</button><span class="local-indicator">Local workspace</span></div>
+  </header>
+  <main id="authView" class="access-layout" hidden>
+    <section class="access-intro"><div class="eyebrow"><span class="pulse"></span> BUILT FOR YOUR NEXT PRODUCT</div><h1>Your software.<br><em>Your customers.</em><br>One workspace.</h1><p>Everything you need to register your application, connect your API, and manage customer access.</p><div class="access-steps"><div><span>01</span><div><strong>Create your application</strong><p>A dedicated workspace and API key for every product.</p></div></div><div><span>02</span><div><strong>Bring your customers</strong><p>Customer profiles with licenses, plans, and device activity.</p></div></div><div><span>03</span><div><strong>Control access</strong><p>Update a plan, extend a license, or revoke access.</p></div></div></div><small>Your data is stored on this local server.</small></section>
+    <section class="access-card">
+      <div class="auth-tabs" role="tablist" aria-label="Account access"><button type="button" role="tab" id="loginTab" aria-selected="true" data-mode="login">Sign in</button><button type="button" role="tab" id="signupTab" aria-selected="false" data-mode="signup">Create account</button></div>
+      <h2 id="authTitle">Welcome back.</h2><p id="authDescription">Sign in to manage your applications and customers.</p>
+      <form id="authForm"><label id="nameField" hidden>Full name<input id="name" name="name" autocomplete="name" maxlength="120" placeholder="Your name"></label><label>Email address<input id="email" name="email" type="email" autocomplete="email" required placeholder="you@company.com"></label><label>Password<input id="password" name="password" type="password" autocomplete="current-password" required placeholder="Your password"></label><p id="passwordHint" class="field-help" hidden>Use at least 10 characters.</p><div id="authError" class="notice error" role="alert" hidden></div><button class="primary full" id="authSubmit" type="submit">Sign in →</button></form>
+      <p class="auth-switch" id="authSwitch"></p><a class="back-link" href="/">← Back to homepage</a>
+    </section>
+  </main>
+  <div id="loadingView" class="loading-state" role="status"><span class="spinner"></span>Opening your workspace…</div>
+  <div id="appView" class="product-layout" hidden>
+    <aside class="product-sidebar">
+      <div class="sidebar-label">APPLICATION</div><label class="sr-only" for="appSelect">Current application</label><select id="appSelect"><option value="">Choose an application</option></select><button class="sidebar-create" id="newAppSidebar" type="button">＋ Register application</button>
+      <nav aria-label="Workspace"><button data-page="overview" class="nav-item active" type="button"><span>▦</span>Overview</button><button data-page="customers" class="nav-item" type="button"><span>♙</span>Customers</button><button data-page="licenses" class="nav-item" type="button"><span>◇</span>Licenses</button><button data-page="keys" class="nav-item" type="button"><span>⌘</span>API & integration</button><button data-page="applications" class="nav-item" type="button"><span>◈</span>Applications</button></nav>
+      <div class="sidebar-bottom"><a href="/docs">? Documentation ↗</a><div class="account"><span class="account-avatar" id="accountAvatar">D</span><div><strong id="accountName"></strong><small id="accountEmail"></small></div></div><button id="logoutButton" class="quiet" type="button">Sign out</button></div>
+    </aside>
+    <main class="product-main"><div class="workspace-topline"><span id="breadcrumb">Workspace / Overview</span><span class="connected"><i></i>Connected to local API</span></div><div id="pageContent"></div></main>
+  </div>
+  <dialog id="editorDialog" class="editor-dialog" aria-labelledby="dialogTitle"><div class="dialog-heading"><div><span class="eyebrow" id="dialogKicker">WORKSPACE</span><h2 id="dialogTitle"></h2></div><button id="closeDialog" class="icon-button" type="button" aria-label="Close dialog">×</button></div><div id="dialogBody"></div></dialog>
+  <div id="notification" class="notification" role="status" hidden></div>
+  <script src="/theme.js"></script><script src="/dashboard.js"></script>
+</body>
 </html>

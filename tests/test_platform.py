@@ -158,5 +158,78 @@ class PlatformHttpTests(unittest.TestCase):
         self.assertEqual(new_key_works["app_id"], "developer-tool")
 
 
+    def test_customer_dashboard_lifecycle_and_tenant_isolation(self) -> None:
+        def developer(email):
+            code, result = self.request('/v1/auth/register', {'name': 'Developer', 'email': email, 'password': 'secure-password'})
+            self.assertEqual(code, 201)
+            return result['session_token']
+
+        owner = developer('owner@example.com')
+        other = developer('other@example.com')
+        _, app = self.request('/v1/developer/apps', {'app_id': 'customer-tool', 'name': 'Customer Tool'}, owner)
+        code, customer = self.request('/v1/developer/customers', {'app_id': 'customer-tool', 'name': 'Alex Morgan', 'email': 'alex@example.com', 'notes': 'Enterprise customer'}, owner)
+        self.assertEqual(code, 201)
+        customer_id = customer['id']
+        code, duplicate = self.request('/v1/developer/customers', {'app_id': 'customer-tool', 'name': 'Other Alex', 'email': 'alex@example.com'}, owner)
+        self.assertEqual(code, 409)
+        route = f'/v1/developer/customers/{customer_id}?app_id=customer-tool'
+        self.assertEqual(self.get_request(route, other)[0], 403)
+        self.assertEqual(self.get_request(route)[0], 401)
+        code, customers = self.get_request('/v1/customers?app_id=customer-tool', api_key=app['api_key'])
+        self.assertEqual(code, 200)
+        self.assertEqual(customers['customers'][0]['name'], 'Alex Morgan')
+        code, license_result = self.request('/v1/licenses', {'app_id': 'customer-tool', 'customer_id': customer_id, 'plan': 'Pro'}, api_key=app['api_key'])
+        self.assertEqual(code, 201)
+        license_id, key = license_result['id'], license_result['license_key']
+        code, detail = self.get_request(route, owner)
+        self.assertEqual(detail['licenses'][0]['plan'], 'Pro')
+        self.assertNotIn('license_key', detail['licenses'][0])
+        self.assertNotIn('key_hash', detail['licenses'][0])
+        self.assertEqual(len(detail['events']), 1)
+        _, activated = self.request('/v1/activate', {'app_id': 'customer-tool', 'license_key': key, 'device_id': 'alex-pc', 'device_label': 'Alex laptop'})
+        validation = {'app_id': 'customer-tool', 'token': activated['token'], 'device_id': 'alex-pc'}
+        self.assertEqual(self.request('/v1/validate', validation)[0], 200)
+        record_path = f'/v1/developer/license-records/{license_id}'
+        self.assertEqual(self.request(record_path+'/revoke', {'app_id': 'customer-tool'}, other)[0], 403)
+        self.assertEqual(self.request(record_path+'/revoke', {'app_id': 'customer-tool'}, owner)[0], 200)
+        self.assertEqual(self.request('/v1/validate', validation)[0], 403)
+        self.assertEqual(self.request('/v1/activate', {'app_id': 'customer-tool', 'license_key': key, 'device_id': 'alex-pc'})[0], 403)
+        self.assertEqual(self.request(record_path+'/restore', {'app_id': 'customer-tool'}, owner)[0], 200)
+        _, fresh = self.request('/v1/activate', {'app_id': 'customer-tool', 'license_key': key, 'device_id': 'alex-pc'})
+        self.assertEqual(self.request('/v1/validate', validation)[0], 403)
+        validation['token'] = fresh['token']
+        self.assertEqual(self.request('/v1/validate', validation)[0], 200)
+        self.assertEqual(self.request(record_path+'/update', {'app_id': 'customer-tool', 'plan': 'Enterprise', 'expires_at': '2030-01-01T00:00:00Z'}, owner)[0], 200)
+        self.assertEqual(self.request('/v1/validate', validation)[0], 403)
+        self.assertEqual(self.get_request(route, owner)[1]['licenses'][0]['plan'], 'Enterprise')
+        self.assertEqual(self.request(record_path+'/reset', {'app_id': 'customer-tool'}, owner)[0], 200)
+        _, renewed = self.request('/v1/activate', {'app_id': 'customer-tool', 'license_key': key, 'device_id': 'new-pc'})
+        self.assertEqual(renewed['status'], 'active')
+        self.request('/v1/developer/apps/customer-tool/revoke', {}, owner)
+        self.assertEqual(self.request('/v1/validate', {'app_id':'customer-tool', 'token':renewed['token'], 'device_id':'new-pc'})[0], 403)
+
+    def test_product_routes_and_assets_are_served(self) -> None:
+        self.server.static_root = str(Path(__file__).resolve().parents[1] / 'site' / 'dist')
+        for route in ['/', '/login', '/signup', '/dashboard', '/dashboard/', '/docs', '/docs/', '/docs.html', '/workspace.css', '/dashboard.js', '/theme.js']:
+            with self.subTest(route=route):
+                with urllib.request.urlopen(self.base_url + route, timeout=3) as response:
+                    self.assertEqual(response.status, 200)
+                    self.assertGreater(len(response.read()), 50)
+        with urllib.request.urlopen(self.base_url + '/docs/', timeout=3) as response:
+            self.assertIn('href="/styles.css"', response.read().decode())
+
+    def test_customer_api_key_cannot_cross_application_boundary(self) -> None:
+        admin = 'test-admin-token-12345'
+        _, first = self.request('/v1/apps', {'app_id': 'first-app', 'name': 'First'}, admin)
+        _, second = self.request('/v1/apps', {'app_id': 'second-app', 'name': 'Second'}, admin)
+        _, customer = self.request('/v1/customers', {'app_id':'first-app','name':'Jane','email':'jane@example.com'}, api_key=first['api_key'])
+        self.assertEqual(self.get_request('/v1/customers?app_id=first-app', api_key=second['api_key'])[0], 401)
+        self.assertEqual(self.get_request(f"/v1/customers/{customer['id']}?app_id=second-app", api_key=second['api_key'])[0], 404)
+        self.assertEqual(self.request('/v1/licenses', {'app_id':'second-app','customer_id':customer['id']}, api_key=second['api_key'])[0], 404)
+        _, license_result = self.request('/v1/licenses', {'app_id':'first-app','customer_id':customer['id']}, api_key=first['api_key'])
+        self.assertEqual(self.request(f"/v1/license-records/{license_result['id']}/revoke", {'app_id':'second-app'}, api_key=second['api_key'])[0], 404)
+        self.assertEqual(self.request(f"/v1/customers/{customer['id']}/update", {'app_id':'first-app','name':'Jane Updated','email':'jane@example.com','notes':'Saved'}, api_key=first['api_key'])[0], 200)
+        self.assertEqual(self.get_request(f"/v1/customers/{customer['id']}?app_id=first-app", api_key=first['api_key'])[1]['customer']['name'], 'Jane Updated')
+
 if __name__ == "__main__":
     unittest.main()

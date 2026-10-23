@@ -14,6 +14,10 @@ Standalone, universal license activation service for desktop software. Any appli
 - Platform-admin application registration with one-time developer API keys.
 - A dependency-free Python client SDK under `sdk/python`.
 - SQLite persistence and an audit trail.
+- Developer sign-in and account registration with a unified light/dark workspace.
+- Application switcher, one-time API-key delivery, and key regeneration.
+- Searchable customer profiles with plan, expiry, device information, and activity.
+- Customer license creation, revoke/restore access, and device reset by record ID.
 
 ## Run locally
 
@@ -25,6 +29,17 @@ python run_server.py
 
 Open `http://127.0.0.1:8080/admin`, enter the admin token, register an application, and create licenses for that application.
 Developers use `http://127.0.0.1:8080/dashboard` to create an account, register their own application, rotate API keys, and manage licenses.
+
+### Developer workflow
+
+1. Open `/signup` and create an account, or sign in at `/login`.
+2. Select **Register application**, enter a product name and unique application ID, and save the API key shown in the dialog.
+3. Select **Customers → Add customer**, enter their name and email, then open their profile.
+4. Select **Issue license**, choose a plan and optional expiry, and save the customer license key.
+5. Send the license key to the customer for device activation. Your server uses the application's API key; customer software uses its license key.
+6. Click a customer name to edit their profile, change a license's plan/expiry, revoke or restore access, or reset its device. Access history records these changes.
+
+The API & integration page contains the app ID, local API URL, a customer-list request example, and key regeneration controls. See `/docs` or `docs/API.md` for endpoint details. This local version does not send customer emails automatically.
 
 For production, put the server behind HTTPS, use long random secrets, restrict the admin route, and back up the database. The default development values are intentionally not production credentials.
 
