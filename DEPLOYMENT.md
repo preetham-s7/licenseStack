@@ -59,6 +59,48 @@ Developers use that URL in the SDK or REST API. The dashboards are:
 - `https://licenses.example.com/dashboard` — developer accounts and application management
 - `https://licenses.example.com/admin` — platform-owner administration
 
+## Railway deployment
+
+The repository includes `railway.json` for the API service. Railway can deploy
+the repository directly from GitHub using the root `Dockerfile`. The server
+automatically uses Railway's injected `PORT` value unless `LICENSE_PORT` is
+explicitly set.
+
+1. Open [Railway](https://railway.com) and sign in with GitHub.
+2. Create a new project and choose **Deploy from GitHub repo**.
+3. Select `preetham-s7/licenseStack` and wait for the first deployment.
+4. In the service's **Variables** section, set:
+
+```text
+LICENSE_ADMIN_TOKEN=<long-random-admin-token>
+LICENSE_SIGNING_SECRET=<long-random-signing-secret>
+LICENSE_DB_PATH=/app/data/licenses.sqlite3
+LICENSE_HOST=0.0.0.0
+LICENSE_CORS_ORIGINS=https://licensestack.vercel.app
+```
+
+Leave `LICENSE_PORT` unset so Railway's `PORT` value is used. Add a Railway
+volume mounted at `/app/data`; this preserves the SQLite database across
+deployments and restarts. Then generate a public HTTPS domain for the service
+from **Settings → Networking**.
+
+After Railway creates the service, verify:
+
+```text
+https://your-service.up.railway.app/health
+```
+
+It must return `{"ok":true,"service":"license-platform"}`. Set that URL in
+`site/dist/runtime-config.js`, commit, and redeploy the Vercel frontend:
+
+```js
+window.LICENSE_PLATFORM_URL = "https://your-service.up.railway.app";
+```
+
+Railway supports Docker-based services, public domains, environment variables,
+and persistent volumes. See the [Railway deployment guide](https://docs.railway.com/guides/docker-compose)
+and [Railway storage guide](https://docs.railway.com/data-storage).
+
 ## Render deployment
 
 The repository includes `render.yaml` for the API service. In Render, choose
