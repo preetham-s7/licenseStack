@@ -1,0 +1,25 @@
+services:
+  - type: web
+    name: licensestack-api
+    runtime: docker
+    plan: starter
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    healthCheckPath: /health
+    envVars:
+      - key: LICENSE_ADMIN_TOKEN
+        generateValue: true
+      - key: LICENSE_SIGNING_SECRET
+        generateValue: true
+      - key: LICENSE_DB_PATH
+        value: /app/data/licenses.sqlite3
+      - key: LICENSE_HOST
+        value: 0.0.0.0
+      - key: LICENSE_PORT
+        value: 8080
+      - key: LICENSE_CORS_ORIGINS
+        value: https://licensestack.vercel.app
+    disk:
+      name: licensestack-data
+      mountPath: /app/data
+      sizeGB: 1

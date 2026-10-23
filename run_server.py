@@ -16,6 +16,7 @@ def main() -> None:
         host=os.environ.get("LICENSE_HOST", "127.0.0.1"),
         port=int(os.environ.get("LICENSE_PORT", "8080")),
         static_root=os.environ.get("LICENSE_WEB_ROOT", str(Path(__file__).resolve().parent / "site" / "dist")),
+        cors_origins=os.environ.get("LICENSE_CORS_ORIGINS", ""),
     )
     print(f"License Platform listening on http://{server.server_address[0]}:{server.server_address[1]}")
     print("Admin console: /admin")

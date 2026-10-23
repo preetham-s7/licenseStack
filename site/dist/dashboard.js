@@ -4,6 +4,7 @@ const esc = (value) => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;
 const state = {session: localStorage.getItem('license_platform_session') || '', user: null, apps: [], app: '', customers: [], licenses: [], usage: null, page: 'overview', detail: null, mode: 'login', search: '', status: '', revision: 0};
 let dialogSubmit = null;
 let toastTimer;
+const apiOrigin = window.LICENSE_PLATFORM_URL || window.location.origin;
 const date = (v) => v ? new Date(v).toLocaleDateString(undefined, {day:'numeric',month:'short',year:'numeric'}) : 'No expiry';
 const stamp = (v) => v ? new Date(v).toLocaleString() : 'Not yet';
 const initials = (name) => esc(String(name).split(/\s+/).map(s=>s[0]).slice(0,2).join('').toUpperCase());
@@ -19,7 +20,7 @@ async function api(path, options={}) {
   const controller = new AbortController();
   const timer = setTimeout(()=>controller.abort(), 15000);
   try {
-    const response = await fetch(path, {...options, signal:controller.signal, headers:{'Content-Type':'application/json', ...(state.session ? {Authorization:`Bearer ${state.session}`} : {})}});
+    const response = await fetch(`${apiOrigin}${path}`, {...options, signal:controller.signal, headers:{'Content-Type':'application/json', ...(state.session ? {Authorization:`Bearer ${state.session}`} : {})}});
     const data = await response.json();
     if (!response.ok) {
       if (response.status === 401 && state.user) { clearSession(); showAuth('login'); }
@@ -28,7 +29,7 @@ async function api(path, options={}) {
     return data;
   } catch (error) {
     if (error.name === 'AbortError') throw new Error('The server took too long. Please try again.');
-    if (error instanceof TypeError) throw new Error('Cannot reach the local server. Check that it is running.');
+    if (error instanceof TypeError) throw new Error('Cannot reach the API server. Check the configured API URL and CORS settings.');
     throw error;
   } finally { clearTimeout(timer); }
 }
@@ -145,7 +146,7 @@ function renderCustomer() {
 }
 function renderKeys() {
   $('pageContent').innerHTML=heading('API & integration','Connect your server to this application’s customers and licenses.')+`<section class="panel"><div class="panel-heading"><h2>Application API key</h2>${badge(currentApp().status)}</div><p>Use this key on your server to manage only this application. The full key is shown when you create or regenerate it.</p><div class="key-box"><code>${esc(currentApp().api_key_prefix)}••••••••••••••••••••••••</code><small class="field-help">Full keys are not stored. Regenerate if you no longer have your key.</small></div><div class="actions">${action('rotate-key','Regenerate API key','primary')}${action('revoke-app','Disable application','danger')}</div></section><section class="panel"><div class="panel-heading"><h2>Connection details</h2><a class="quiet" href="/docs">Full documentation ↗</a></div><div class="license-meta"><div><small>Base URL</small><span class="mono-value">${esc(location.origin)}</span></div><div><small>Application ID</small><span class="mono-value">${esc(state.app)}</span></div><div><small>Authentication header</small><span class="mono-value">X-API-Key: YOUR_API_KEY</span></div></div><p>List your customers from your server:</p><div class="key-box"><pre id="integrationSample"></pre>${action('copy-sample','Copy example')}</div><p>Customer software activates with a customer license key and device ID. Keep your application API key on your server.</p><a class="quiet" href="/docs#quickstart">Activation quickstart →</a></section>`;
-  $('integrationSample').textContent=`curl "${location.origin}/v1/customers?app_id=${state.app}" -H "X-API-Key: YOUR_API_KEY"`;
+  $('integrationSample').textContent=`curl "${apiOrigin}/v1/customers?app_id=${state.app}" -H "X-API-Key: YOUR_API_KEY"`;
 }
 function renderApplications() {
   $('pageContent').innerHTML=heading('Applications','Each application has its own API key, customers, and licenses.',action('new-app','＋ Register application','primary'))+`<div class="app-grid">${state.apps.map(a=>`<article class="app-card"><div class="panel-heading"><span class="person-avatar">◈</span>${badge(a.status)}</div><h2>${esc(a.name)}</h2><p class="mono-value">${esc(a.app_id)}</p><p>Created ${esc(date(a.created_at))}</p><div class="actions">${a.status==='active'?action('select-app',a.app_id===state.app?'Current application →':'Open application →','secondary',`data-id="${esc(a.app_id)}"`):'<span class="field-help">Application disabled</span>'}</div></article>`).join('')||'<section class="panel empty-state"><h2>No applications yet.</h2><p>Register your first product to get started.</p>'+action('new-app','Register application','primary')+'</section>'}</div>`;

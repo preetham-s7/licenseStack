@@ -14,7 +14,13 @@ from license_platform.http import create_server
 class PlatformHttpTests(unittest.TestCase):
     def setUp(self) -> None:
         self.temp_dir = tempfile.TemporaryDirectory(dir=Path(__file__).resolve().parents[1])
-        self.server = create_server(Path(self.temp_dir.name) / "licenses.sqlite3", "test-signing-secret-12345", "test-admin-token-12345", port=0)
+        self.server = create_server(
+            Path(self.temp_dir.name) / "licenses.sqlite3",
+            "test-signing-secret-12345",
+            "test-admin-token-12345",
+            port=0,
+            cors_origins="https://licensestack.vercel.app",
+        )
         self.thread = threading.Thread(target=self.server.serve_forever, daemon=True)
         self.thread.start()
         self.base_url = f"http://127.0.0.1:{self.server.server_address[1]}"
@@ -56,6 +62,17 @@ class PlatformHttpTests(unittest.TestCase):
                 return error.code, json.loads(error.read())
             finally:
                 error.close()
+
+    def test_render_cors_preflight_is_configured(self) -> None:
+        request = urllib.request.Request(
+            self.base_url + "/v1/auth/login",
+            headers={"Origin": "https://licensestack.vercel.app"},
+            method="OPTIONS",
+        )
+        with urllib.request.urlopen(request, timeout=3) as response:
+            self.assertEqual(response.status, 204)
+            self.assertEqual(response.headers["Access-Control-Allow-Origin"], "https://licensestack.vercel.app")
+            self.assertIn("Authorization", response.headers["Access-Control-Allow-Headers"])
 
     def test_one_time_activation_is_bound_to_first_device(self) -> None:
         status, created = self.request("/v1/licenses", {"app_id": "sample-app"}, "test-admin-token-12345")

@@ -20,6 +20,22 @@ MAX_BODY = 64 * 1024
 class LicenseRequestHandler(BaseHTTPRequestHandler):
     server_version = "LicensePlatform/0.1"
 
+    def end_headers(self) -> None:  # noqa: N802
+        origin = self.headers.get("Origin", "")
+        allowed_origins = getattr(self.server, "cors_origins", set())  # type: ignore[attr-defined]
+        if origin and ("*" in allowed_origins or origin in allowed_origins):
+            self.send_header("Access-Control-Allow-Origin", origin)
+            self.send_header("Vary", "Origin")
+        self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+        self.send_header("Access-Control-Allow-Headers", "Content-Type, Authorization, X-API-Key")
+        self.send_header("Access-Control-Max-Age", "600")
+        super().end_headers()
+
+    def do_OPTIONS(self) -> None:  # noqa: N802
+        self.send_response(HTTPStatus.NO_CONTENT)
+        self.send_header("Content-Length", "0")
+        self.end_headers()
+
     def _service(self) -> LicenseService:
         return self.server.license_service  # type: ignore[attr-defined]
 
@@ -384,6 +400,7 @@ def create_server(
     host: str = "127.0.0.1",
     port: int = 8080,
     static_root: str | None = None,
+    cors_origins: str = "",
 ) -> ThreadingHTTPServer:
     if not admin_token or len(admin_token) < 16:
         raise ValueError("admin_token must contain at least 16 characters")
@@ -391,4 +408,5 @@ def create_server(
     server.license_service = LicenseService(db_path, signing_secret)  # type: ignore[attr-defined]
     server.admin_token = admin_token  # type: ignore[attr-defined]
     server.static_root = static_root  # type: ignore[attr-defined]
+    server.cors_origins = {origin.strip() for origin in cors_origins.split(",") if origin.strip()}  # type: ignore[attr-defined]
     return server

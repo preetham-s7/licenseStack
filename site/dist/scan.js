@@ -6,6 +6,7 @@ let stream = null;
 let detector = null;
 let scanning = false;
 let handling = false;
+const apiOrigin = window.LICENSE_PLATFORM_URL || window.location.origin;
 
 function mobileDeviceId() {
   const key = 'licensestack-mobile-device';
@@ -40,7 +41,7 @@ async function submitCode(value) {
   handling = true;
   status('Checking activation…', 'LicenseStack is securely processing this pairing.', '');
   try {
-    const response = await fetch('/v1/pairing/scan', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({pairing_code: pairingCode, mobile_device_id: mobileDeviceId()})});
+    const response = await fetch(`${apiOrigin}/v1/pairing/scan`, {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({pairing_code: pairingCode, mobile_device_id: mobileDeviceId()})});
     const data = await response.json();
     if (!response.ok) throw new Error(data.error?.message || 'This QR code could not be accepted.');
     if (data.status === 'already_activated') status('Already activated', 'This software is already paired. Scanning again will not create another activation.', 'success');

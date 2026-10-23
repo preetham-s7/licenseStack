@@ -1,7 +1,8 @@
 const menuToggle = document.querySelector('.menu-toggle');
 const siteNav = document.querySelector('.site-nav');
 const toast = document.querySelector('.toast');
-const platformOrigin = window.LICENSE_PLATFORM_URL || window.location.origin;
+const platformOrigin = window.location.origin;
+const apiOrigin = window.LICENSE_PLATFORM_URL || window.location.origin;
 
 document.querySelectorAll('[data-platform-route]').forEach((element) => {
   const route = element.dataset.platformRoute;
@@ -190,7 +191,7 @@ async function submitHomePairingCode(value) {
   homeScanBusy = true;
   setScannerStatus('Checking activation…');
   try {
-    const response = await fetch(`${platformOrigin}/v1/pairing/scan`, {
+    const response = await fetch(`${apiOrigin}/v1/pairing/scan`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ pairing_code: pairingCode, mobile_device_id: getMobileDeviceId() }),
