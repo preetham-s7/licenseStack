@@ -25,6 +25,11 @@ function setMenuOpen(isOpen) {
   siteNav.setAttribute('aria-hidden', String(!isOpen));
   menuToggle.setAttribute('aria-expanded', String(isOpen));
   menuToggle.textContent = isOpen ? 'Close' : 'Menu';
+  if (window.matchMedia?.('(max-width: 680px)').matches) {
+    siteNav.style.display = isOpen ? 'flex' : 'none';
+  } else {
+    siteNav.style.removeProperty('display');
+  }
 }
 
 menuToggle?.addEventListener('click', (event) => {
@@ -50,8 +55,12 @@ document.addEventListener('keydown', (event) => {
 });
 
 window.addEventListener('resize', () => {
-  if (window.innerWidth > 680) setMenuOpen(false);
+  setMenuOpen(false);
 });
+
+// Start with a deterministic closed state on narrow screens, including after
+// a browser restores a page from its back-forward cache.
+setMenuOpen(false);
 
 document.querySelectorAll('[data-copy-target]').forEach((button) => {
   button.addEventListener('click', async () => {
