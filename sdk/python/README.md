@@ -11,8 +11,15 @@ client = LicenseClient(
     storage_path="license-token.json",
 )
 
-client.activate(customer_license_key)
+activation = client.activate(customer_license_key)
 client.validate_online()
+
+# After activation, show activation["pairing"]["scan_path"] as a QR code in your app.
+pairing = activation["pairing"]
+if pairing["status"] == "pending":
+    print(pairing["scan_path"])
+    # Poll until the customer scans the QR in LicenseStack.
+    print(client.pairing_status(pairing["pairing_id"]))
 ```
 
 The REST API is language-neutral, so applications written in JavaScript,

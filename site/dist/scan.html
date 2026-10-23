@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Scan activation QR — LicenseStack</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/styles.css"><link rel="stylesheet" href="/theme.css"><link rel="stylesheet" href="/site-common.css"><link rel="stylesheet" href="/scan.css">
+</head>
+<body class="scan-body">
+  <header class="site-header scan-header">
+    <a class="brand" href="/" aria-label="LicenseStack home"><span class="brand-mark"><span></span><span></span><span></span></span>LicenseStack</a>
+    <nav class="site-nav"><a href="/docs">Documentation ↗</a><button class="theme-toggle" type="button" data-theme-toggle aria-label="Switch theme">☾</button></nav>
+  </header>
+  <main class="scan-main">
+    <section class="scan-card" aria-labelledby="scanTitle">
+      <div class="eyebrow"><span class="pulse"></span> SECURE DEVICE PAIRING</div>
+      <h1 id="scanTitle">Scan your activation QR.</h1>
+      <p class="scan-lead">Use your phone camera to pair this device with LicenseStack. The first valid scan activates it automatically.</p>
+      <div class="camera-frame" id="cameraFrame">
+        <video id="camera" playsinline muted aria-label="Camera preview"></video>
+        <div class="camera-guide" aria-hidden="true"><span></span></div>
+        <div class="camera-placeholder" id="cameraPlaceholder"><span class="scan-icon">⌗</span><strong>Camera is off</strong><small>Tap start camera to scan the QR shown in your software.</small></div>
+      </div>
+      <div class="scan-actions"><button id="startCamera" class="primary" type="button">Start camera</button><button id="stopCamera" class="secondary" type="button" hidden>Stop camera</button></div>
+      <div id="scanStatus" class="scan-status" role="status" aria-live="polite"><strong>Ready to scan</strong><span>Camera access is requested only after you start scanning.</span></div>
+      <details class="manual-entry"><summary>Paste a QR value instead</summary><label for="pairingCode">Pairing code or scan URL</label><textarea id="pairingCode" rows="3" placeholder="Paste the QR value here"></textarea><button id="submitCode" class="secondary" type="button">Submit code</button></details>
+    </section>
+  </main>
+  <script src="/theme.js"></script><script src="/scan.js"></script>
+</body>
+</html>

@@ -18,6 +18,8 @@ Standalone, universal license activation service for desktop software. Any appli
 - Application switcher, one-time API-key delivery, and key regeneration.
 - Searchable customer profiles with plan, expiry, device information, and activity.
 - Customer license creation, revoke/restore access, and device reset by record ID.
+- Real application activity metrics from the audit trail, including activations, validations, and recent access changes.
+- One-time mobile QR pairing after desktop activation, with repeat scans returning `already_activated`.
 
 ## Run locally
 
@@ -49,6 +51,7 @@ For production, put the server behind HTTPS, use long random secrets, restrict t
 - `GET /v1/apps` — platform admin: list registered applications; secret keys are not returned.
 - `POST /v1/licenses` — platform admin or application API key: create a license; the response contains the one-time customer key.
 - `GET /v1/licenses?app_id=your-app` — platform admin or that application's API key: list license metadata.
+- `GET /v1/usage?app_id=your-app` — platform admin or that application's API key: read real activation, validation, and access activity metrics.
 - `POST /v1/activate` — client: bind a key to the first device.
 - `POST /v1/validate` — client: validate a signed token for its device.
 - `POST /v1/licenses/{key}/reset` — admin: release a key for a computer replacement.
@@ -63,6 +66,10 @@ See [DEPLOYMENT.md](DEPLOYMENT.md) for container and HTTPS deployment.
 The platform owner registers an application with `POST /v1/apps` and gives the developer the returned `app_id` and `api_key`. The developer uses `X-API-Key` for license-management calls. The secret API key must remain on the developer's server or admin tooling and must not be embedded in a downloadable desktop application. A desktop application uses the public `app_id` plus its customer's one-time license key for `/v1/activate` and `/v1/validate`.
 
 The service deliberately does not use an IP address as the device identity because IP addresses change frequently.
+
+### Mobile QR pairing
+
+The desktop SDK can call `create_pairing()` after activation, render the returned `scan_path` as a QR code, and poll `pairing_status()`. The customer scans it at `/scan`; the first scan pairs the mobile authenticator and later scans are safely treated as already activated. For phone testing on a local network, run with `LICENSE_HOST=0.0.0.0` and open the laptop's LAN address instead of `127.0.0.1`.
 
 ## Verification
 

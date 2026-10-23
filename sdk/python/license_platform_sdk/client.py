@@ -88,6 +88,7 @@ class LicenseClient:
     def activate(self, license_key: str, device_label: Optional[str] = None) -> dict[str, Any]:
         result = self._request("/v1/activate", {"app_id": self.app_id, "license_key": license_key, "device_id": self.device_id, "device_label": device_label})
         self._save_token(result["token"])
+        result["pairing"] = self.create_pairing()
         return result
 
     def validate_online(self) -> dict[str, Any]:
@@ -95,6 +96,20 @@ class LicenseClient:
         if not token:
             raise LicenseClientError("NOT_ACTIVATED", "This application has not been activated.")
         return self._request("/v1/validate", {"app_id": self.app_id, "token": token, "device_id": self.device_id})
+
+    def create_pairing(self) -> dict[str, Any]:
+        """Create a short-lived QR pairing challenge for the activated device."""
+        token = self._load_token()
+        if not token:
+            raise LicenseClientError("NOT_ACTIVATED", "Activate the application before pairing a mobile device.")
+        return self._request("/v1/pairing/create", {"app_id": self.app_id, "token": token, "device_id": self.device_id})
+
+    def pairing_status(self, pairing_id: str) -> dict[str, Any]:
+        """Check whether the customer scanned and paired the QR challenge."""
+        token = self._load_token()
+        if not token:
+            raise LicenseClientError("NOT_ACTIVATED", "Activate the application before checking pairing status.")
+        return self._request("/v1/pairing/status", {"app_id": self.app_id, "pairing_id": pairing_id, "token": token, "device_id": self.device_id})
 
     def is_activated(self) -> bool:
         try:

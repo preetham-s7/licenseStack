@@ -33,10 +33,13 @@ These customer routes require `X-API-Key` for the selected application (or the a
 | POST | `/v1/license-records/{id}/revoke` | `app_id` |
 | POST | `/v1/license-records/{id}/restore` | `app_id` |
 | POST | `/v1/license-records/{id}/reset` | `app_id` |
+| GET | `/v1/usage?app_id=your-app` | Activation, validation, and access activity metrics |
 
 Developer-session equivalents use `/v1/developer/customers` and `/v1/developer/license-records`, with `Authorization: Bearer <session_token>`. Every operation checks application ownership. Customer IDs cannot be used across applications.
 
 Changing a plan or expiry invalidates previous tokens; the same device can activate again to refresh its token. Revocation stops the next online validation and activation. Restore and device reset clear the old binding and invalidate old tokens, allowing a new activation. Disabling an application stops both management API-key access and customer activation/validation. Raw API keys and customer license keys are returned only at creation or key regeneration, never in lists.
+
+`GET /v1/usage?app_id=your-app` returns real totals, last-30-day totals, and recent audit events. Use `X-API-Key` from your server, or use `/v1/developer/usage` with the developer session token in the dashboard.
 
 ## Register an application
 
@@ -61,6 +64,21 @@ Content-Type: application/json
 ```
 
 The `license_key` appears only in this response. Store it securely. The request can use either the platform admin token or the registered application's `X-API-Key`.
+
+## Mobile QR pairing
+
+After activation, the desktop software can create a short-lived QR challenge using the signed activation token:
+
+```http
+POST /v1/pairing/create
+Content-Type: application/json
+
+{"app_id":"vendor-tool","token":"<signed-token>","device_id":"app-scoped-fingerprint"}
+```
+
+The response contains `scan_path` and `pairing_code`. Encode `scan_path` (or the pairing code) as a QR image and show it in the customer software. The customer opens `/scan` on their phone and scans it. The first valid scan returns `status: "activated"`; later scans return `status: "already_activated"` and do not create another activation.
+
+The desktop software can poll the result with `POST /v1/pairing/status`. QR codes expire after ten minutes and contain no API key or raw license key.
 
 ## Activate
 

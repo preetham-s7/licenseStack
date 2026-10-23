@@ -8,8 +8,9 @@
     localStorage.setItem(key, theme);
     document.querySelectorAll('[data-theme-toggle]').forEach((button) => {
       const dark = theme === 'dark';
-      button.textContent = dark ? 'Light mode' : 'Dark mode';
+      button.textContent = dark ? '☀' : '☾';
       button.setAttribute('aria-label', dark ? 'Switch to light theme' : 'Switch to dark theme');
+      button.setAttribute('title', dark ? 'Switch to light theme' : 'Switch to dark theme');
       button.setAttribute('aria-pressed', String(dark));
     });
   }

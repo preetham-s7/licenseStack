@@ -18,7 +18,7 @@ import string
 import time
 import uuid
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any, Optional
 
@@ -196,6 +196,20 @@ class LicenseService:
                     details_json TEXT,
                     FOREIGN KEY(license_id) REFERENCES licenses(id)
                 );
+                CREATE TABLE IF NOT EXISTS pairing_sessions (
+                    id TEXT PRIMARY KEY,
+                    app_id TEXT NOT NULL,
+                    license_id TEXT NOT NULL,
+                    desktop_device_hash TEXT NOT NULL,
+                    code_hash TEXT NOT NULL UNIQUE,
+                    status TEXT NOT NULL CHECK(status IN ('pending', 'paired', 'expired')),
+                    created_at TEXT NOT NULL,
+                    expires_at TEXT NOT NULL,
+                    paired_at TEXT,
+                    mobile_device_hash TEXT,
+                    FOREIGN KEY(license_id) REFERENCES licenses(id)
+                );
+                CREATE INDEX IF NOT EXISTS idx_pairing_license ON pairing_sessions(license_id);
                 """
             )
             application_columns = {row["name"] for row in connection.execute("PRAGMA table_info(applications)").fetchall()}
@@ -207,7 +221,8 @@ class LicenseService:
                 UNIQUE(app_id, email), FOREIGN KEY(app_id) REFERENCES applications(app_id))""")
             license_columns = {row["name"] for row in connection.execute("PRAGMA table_info(licenses)")}
             for column, definition in {"customer_id": "TEXT", "plan": "TEXT NOT NULL DEFAULT 'Standard'",
-                                       "version": "INTEGER NOT NULL DEFAULT 0"}.items():
+                                       "version": "INTEGER NOT NULL DEFAULT 0", "mobile_device_hash": "TEXT",
+                                       "paired_at": "TEXT"}.items():
                 if column not in license_columns:
                     connection.execute(f"ALTER TABLE licenses ADD COLUMN {column} {definition}")
 
@@ -472,6 +487,97 @@ class LicenseService:
             self._audit(connection, record["id"], "validated", ip_address, payload["device_hash"])
             return {"valid": True, "license_id": record["id"], "app_id": app_id, "expires_at": record["expires_at"], "plan": record["plan"], "customer_id": record["customer_id"]}
 
+    def create_pairing_session(self, app_id: str, token: str, device_id: str) -> dict[str, Any]:
+        """Create a short-lived QR pairing challenge for an activated desktop."""
+        validation = self.validate(app_id, token, device_id)
+        now = datetime.now(timezone.utc).replace(microsecond=0)
+        expires = now + timedelta(minutes=10)
+        pairing_id = str(uuid.uuid4())
+        pairing_code = f"ls_pair_{pairing_id}_{secrets.token_urlsafe(24)}"
+        device_hash = _device_hash(device_id, self.secret)
+        with self._session() as connection:
+            record = connection.execute(
+                "SELECT mobile_device_hash, paired_at FROM licenses WHERE id=? AND app_id=?",
+                (validation["license_id"], app_id),
+            ).fetchone()
+            if not record:
+                raise LicenseError("INVALID_LICENSE", "The license no longer exists.", 403)
+            if record["mobile_device_hash"]:
+                return {
+                    "pairing_id": None,
+                    "pairing_code": None,
+                    "scan_path": None,
+                    "status": "already_activated",
+                    "paired_at": record["paired_at"],
+                }
+            connection.execute(
+                "UPDATE pairing_sessions SET status='expired' WHERE license_id=? AND status='pending'",
+                (validation["license_id"],),
+            )
+            connection.execute(
+                "INSERT INTO pairing_sessions(id, app_id, license_id, desktop_device_hash, code_hash, status, created_at, expires_at) VALUES (?, ?, ?, ?, ?, 'pending', ?, ?)",
+                (pairing_id, app_id, validation["license_id"], device_hash,
+                 _credential_hash(pairing_code, self.secret), now.isoformat(), expires.isoformat()),
+            )
+        return {
+            "pairing_id": pairing_id,
+            "pairing_code": pairing_code,
+            "scan_path": f"/scan?code={pairing_code}",
+            "status": "pending",
+            "expires_at": expires.isoformat(),
+        }
+
+    def scan_pairing(self, pairing_code: str, mobile_device_id: str) -> dict[str, Any]:
+        """Consume a QR challenge once and pair the mobile authenticator."""
+        if not isinstance(pairing_code, str) or not pairing_code.startswith("ls_pair_"):
+            raise LicenseError("INVALID_PAIRING", "The QR pairing code is invalid.")
+        if not isinstance(mobile_device_id, str) or not mobile_device_id.strip():
+            raise LicenseError("INVALID_PAIRING", "A mobile device identifier is required.")
+        mobile_hash = _device_hash(mobile_device_id, self.secret)
+        now = datetime.now(timezone.utc).replace(microsecond=0)
+        with self._session() as connection:
+            connection.execute("BEGIN IMMEDIATE")
+            session = connection.execute(
+                "SELECT * FROM pairing_sessions WHERE code_hash=?", (_credential_hash(pairing_code, self.secret),)
+            ).fetchone()
+            if not session:
+                raise LicenseError("INVALID_PAIRING", "The QR pairing code is invalid or expired.", 404)
+            if session["status"] == "paired":
+                return {"status": "already_activated", "app_id": session["app_id"], "license_id": session["license_id"], "paired_at": session["paired_at"]}
+            if session["status"] == "expired" or session["expires_at"] <= now.isoformat():
+                connection.execute("UPDATE pairing_sessions SET status='expired' WHERE id=?", (session["id"],))
+                raise LicenseError("PAIRING_EXPIRED", "This QR pairing code has expired. Generate a new one.", 410)
+            license_row = connection.execute("SELECT * FROM licenses WHERE id=?", (session["license_id"],)).fetchone()
+            if not license_row or license_row["status"] != "active" or license_row["device_hash"] != session["desktop_device_hash"]:
+                raise LicenseError("PAIRING_INACTIVE", "The desktop license is no longer active.", 409)
+            if license_row["mobile_device_hash"]:
+                connection.execute("UPDATE pairing_sessions SET status='paired', paired_at=? WHERE id=?", (license_row["paired_at"] or now.isoformat(), session["id"]))
+                return {"status": "already_activated", "app_id": session["app_id"], "license_id": session["license_id"], "paired_at": license_row["paired_at"]}
+            connection.execute(
+                "UPDATE licenses SET mobile_device_hash=?, paired_at=? WHERE id=?",
+                (mobile_hash, now.isoformat(), session["license_id"]),
+            )
+            connection.execute(
+                "UPDATE pairing_sessions SET status='paired', paired_at=?, mobile_device_hash=? WHERE id=?",
+                (now.isoformat(), mobile_hash, session["id"]),
+            )
+            self._audit(connection, session["license_id"], "mobile_paired", None, session["desktop_device_hash"])
+            return {"status": "activated", "app_id": session["app_id"], "license_id": session["license_id"], "paired_at": now.isoformat()}
+
+    def pairing_status(self, app_id: str, pairing_id: str, token: str, device_id: str) -> dict[str, Any]:
+        validation = self.validate(app_id, token, device_id)
+        with self._session() as connection:
+            session = connection.execute(
+                "SELECT status, expires_at, paired_at FROM pairing_sessions WHERE id=? AND app_id=? AND license_id=?",
+                (pairing_id, app_id, validation["license_id"]),
+            ).fetchone()
+            if not session:
+                raise LicenseError("PAIRING_NOT_FOUND", "The pairing session was not found.", 404)
+            if session["status"] == "pending" and session["expires_at"] <= utc_now():
+                connection.execute("UPDATE pairing_sessions SET status='expired' WHERE id=?", (pairing_id,))
+                return {"status": "expired", "paired": False}
+            return {"status": "activated" if session["status"] == "paired" else session["status"], "paired": session["status"] == "paired", "paired_at": session["paired_at"]}
+
     def reset(self, license_key: str, app_id: Optional[str] = None, ip_address: Optional[str] = None, developer_id: Optional[str] = None) -> dict[str, Any]:
         with self._session() as connection:
             record = self._find_by_key(connection, license_key)
@@ -525,6 +631,43 @@ class LicenseService:
                  "device_label": row["device_label"], "last_seen_at": row["last_seen_at"], "customer_id": row["customer_id"], "plan": row["plan"]}
                 for row in rows
             ]
+
+    def usage_summary(self, app_id: str, developer_id: Optional[str] = None) -> dict[str, Any]:
+        """Return real activation, validation, and access activity for one app.
+
+        The audit trail is the source of truth, so dashboard metrics never use
+        placeholder numbers and remain useful after a server restart.
+        """
+        with self._session() as connection:
+            if developer_id and not self._application_owned(connection, app_id, developer_id):
+                raise LicenseError("APP_ACCESS_DENIED", "You do not have access to this application.", 403)
+            application = connection.execute("SELECT app_id FROM applications WHERE app_id=?", (app_id,)).fetchone()
+            if not application:
+                raise LicenseError("APP_NOT_FOUND", "The application was not found.", 404)
+            since = (datetime.now(timezone.utc) - timedelta(days=30)).replace(microsecond=0).isoformat()
+            totals = {"activated": 0, "activation_repeated": 0, "validated": 0,
+                      "revoked": 0, "reset": 0, "restore": 0, "activation_rejected": 0}
+            rows = connection.execute("""
+                SELECT e.event_type, COUNT(*) AS count
+                FROM audit_events e JOIN licenses l ON l.id=e.license_id
+                WHERE l.app_id=?
+                GROUP BY e.event_type
+            """, (app_id,)).fetchall()
+            for row in rows:
+                totals[row["event_type"]] = row["count"]
+            recent_rows = connection.execute("""
+                SELECT e.id, e.event_type, e.created_at, e.ip_address, l.id AS license_id,
+                       l.key_prefix, l.customer_id, l.plan
+                FROM audit_events e JOIN licenses l ON l.id=e.license_id
+                WHERE l.app_id=? AND e.created_at>=?
+                ORDER BY e.id DESC LIMIT 100
+            """, (app_id, since)).fetchall()
+            recent = [dict(row) for row in recent_rows]
+            last_30 = {"activated": 0, "activation_repeated": 0, "validated": 0,
+                       "revoked": 0, "reset": 0, "restore": 0, "activation_rejected": 0}
+            for row in recent:
+                last_30[row["event_type"]] = last_30.get(row["event_type"], 0) + 1
+            return {"app_id": app_id, "totals": totals, "last_30_days": last_30, "recent": recent}
 
     @staticmethod
     def _customer_fields(data: dict) -> tuple[str, str, str]:

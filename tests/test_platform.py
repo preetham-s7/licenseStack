@@ -87,6 +87,28 @@ class PlatformHttpTests(unittest.TestCase):
         self.assertEqual(status, 401)
         self.assertEqual(invalid["error"]["code"], "INVALID_TOKEN")
 
+    def test_mobile_qr_pairing_is_one_time_and_repeatable(self) -> None:
+        _, created = self.request("/v1/licenses", {"app_id": "qr-app"}, "test-admin-token-12345")
+        key = created["license_key"]
+        _, activation = self.request("/v1/activate", {"app_id": "qr-app", "license_key": key, "device_id": "desktop-a"})
+        status, pairing = self.request("/v1/pairing/create", {"app_id": "qr-app", "token": activation["token"], "device_id": "desktop-a"})
+        self.assertEqual(status, 201)
+        self.assertEqual(pairing["status"], "pending")
+        self.assertIn("/scan?code=", pairing["scan_path"])
+
+        status, first_scan = self.request("/v1/pairing/scan", {"pairing_code": pairing["pairing_code"], "mobile_device_id": "phone-a"})
+        self.assertEqual(status, 200)
+        self.assertEqual(first_scan["status"], "activated")
+        status, repeat_scan = self.request("/v1/pairing/scan", {"pairing_code": pairing["pairing_code"], "mobile_device_id": "phone-a"})
+        self.assertEqual(status, 200)
+        self.assertEqual(repeat_scan["status"], "already_activated")
+        status, pairing_status = self.request("/v1/pairing/status", {"app_id": "qr-app", "pairing_id": pairing["pairing_id"], "token": activation["token"], "device_id": "desktop-a"})
+        self.assertEqual(status, 200)
+        self.assertTrue(pairing_status["paired"])
+        status, no_new_pairing = self.request("/v1/pairing/create", {"app_id": "qr-app", "token": activation["token"], "device_id": "desktop-a"})
+        self.assertEqual(status, 201)
+        self.assertEqual(no_new_pairing["status"], "already_activated")
+
     def test_admin_can_reset_then_reactivate_and_revoke(self) -> None:
         _, created = self.request("/v1/licenses", {"app_id": "other-app"}, "test-admin-token-12345")
         key = created["license_key"]
@@ -189,6 +211,13 @@ class PlatformHttpTests(unittest.TestCase):
         _, activated = self.request('/v1/activate', {'app_id': 'customer-tool', 'license_key': key, 'device_id': 'alex-pc', 'device_label': 'Alex laptop'})
         validation = {'app_id': 'customer-tool', 'token': activated['token'], 'device_id': 'alex-pc'}
         self.assertEqual(self.request('/v1/validate', validation)[0], 200)
+        code, usage = self.get_request('/v1/developer/usage?app_id=customer-tool', owner)
+        self.assertEqual(code, 200)
+        self.assertEqual(usage['totals']['activated'], 1)
+        self.assertEqual(usage['totals']['validated'], 1)
+        code, api_usage = self.get_request('/v1/usage?app_id=customer-tool', api_key=app['api_key'])
+        self.assertEqual(code, 200)
+        self.assertGreaterEqual(len(api_usage['recent']), 2)
         record_path = f'/v1/developer/license-records/{license_id}'
         self.assertEqual(self.request(record_path+'/revoke', {'app_id': 'customer-tool'}, other)[0], 403)
         self.assertEqual(self.request(record_path+'/revoke', {'app_id': 'customer-tool'}, owner)[0], 200)
@@ -210,7 +239,7 @@ class PlatformHttpTests(unittest.TestCase):
 
     def test_product_routes_and_assets_are_served(self) -> None:
         self.server.static_root = str(Path(__file__).resolve().parents[1] / 'site' / 'dist')
-        for route in ['/', '/login', '/signup', '/dashboard', '/dashboard/', '/docs', '/docs/', '/docs.html', '/workspace.css', '/dashboard.js', '/theme.js']:
+        for route in ['/', '/login', '/signup', '/dashboard', '/dashboard/', '/docs', '/docs/', '/scan', '/scan/', '/docs.html', '/workspace.css', '/dashboard.js', '/theme.js', '/scan.css', '/scan.js']:
             with self.subTest(route=route):
                 with urllib.request.urlopen(self.base_url + route, timeout=3) as response:
                     self.assertEqual(response.status, 200)

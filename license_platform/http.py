@@ -133,6 +133,9 @@ class LicenseRequestHandler(BaseHTTPRequestHandler):
             if parsed.path.rstrip("/") == "/docs":
                 if self._serve_static("/docs.html"):
                     return
+            if parsed.path.rstrip("/") in {"/scan", "/pair"}:
+                if self._serve_static("/scan.html"):
+                    return
             if parsed.path == "/v1/me":
                 self._json(200, {"developer": self._require_developer()})
                 return
@@ -156,6 +159,20 @@ class LicenseRequestHandler(BaseHTTPRequestHandler):
                 query = parse_qs(parsed.query)
                 app_id = query.get("app_id", [None])[0]
                 self._json(200, {"licenses": self._service().list_developer_licenses(developer["id"], app_id)})
+                return
+            if parsed.path == "/v1/developer/usage":
+                developer = self._require_developer()
+                app_id = parse_qs(parsed.query).get("app_id", [""])[0]
+                if not app_id:
+                    raise LicenseError("APP_REQUIRED", "Choose an application.")
+                self._json(200, self._service().usage_summary(app_id, developer["id"]))
+                return
+            if parsed.path == "/v1/usage":
+                app_id = parse_qs(parsed.query).get("app_id", [""])[0]
+                if not app_id:
+                    raise LicenseError("APP_REQUIRED", "Choose an application.")
+                self._require_app_or_admin(app_id)
+                self._json(200, self._service().usage_summary(app_id))
                 return
             if parsed.path == "/v1/licenses":
                 query = parse_qs(parsed.query)
@@ -234,6 +251,15 @@ class LicenseRequestHandler(BaseHTTPRequestHandler):
                 if parsed.path.endswith("/revoke"):
                     self._json(200, self._service().revoke_application(app_id, developer["id"]))
                     return
+            if parsed.path == "/v1/pairing/create":
+                self._json(201, self._service().create_pairing_session(data.get("app_id", ""), data.get("token", ""), data.get("device_id", "")))
+                return
+            if parsed.path == "/v1/pairing/status":
+                self._json(200, self._service().pairing_status(data.get("app_id", ""), data.get("pairing_id", ""), data.get("token", ""), data.get("device_id", "")))
+                return
+            if parsed.path == "/v1/pairing/scan":
+                self._json(200, self._service().scan_pairing(data.get("pairing_code", ""), data.get("mobile_device_id", "")))
+                return
             if parsed.path.startswith("/v1/developer/licenses/"):
                 developer = self._require_developer()
                 key = parsed.path.split("/v1/developer/licenses/", 1)[1].rsplit("/", 1)[0]

@@ -10,6 +10,7 @@
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="styles.css" />
     <link rel="stylesheet" href="theme.css" />
+    <link rel="stylesheet" href="site-common.css" />
   </head>
   <body>
     <div class="ambient ambient-one"></div>
@@ -26,7 +27,8 @@
         <a href="#developers">Developers</a>
         <a href="/docs.html" data-platform-route="/docs.html">API</a>
         <a href="#pricing">Pricing</a>
-        <button class="theme-toggle" type="button" data-theme-toggle aria-label="Switch to dark theme">Dark mode</button>
+        <a class="nav-scan" href="#customer-scan" data-open-scanner>Scan activation QR</a>
+        <button class="theme-toggle" type="button" data-theme-toggle aria-label="Switch to dark theme">☾</button>
         <a class="nav-login" href="/login" data-platform-route="/login">Sign in</a>
         <a class="button button-small" href="/signup" data-platform-route="/signup">Start building <span>↗</span></a>
       </nav>
@@ -40,6 +42,7 @@
           <p class="hero-lede">A calm, developer-first way to issue licenses, bind them to trusted devices, and give every application a secure path to activation.</p>
           <div class="hero-actions">
             <a class="button" href="/signup" data-platform-route="/signup">Create your first app <span>↗</span></a>
+            <button class="button button-scan" type="button" data-open-scanner>Scan activation QR <span>⌁</span></button>
             <a class="text-link" href="/docs.html" data-platform-route="/docs.html">Read the API docs <span>→</span></a>
           </div>
           <div class="hero-note"><span class="lock-icon">⌁</span> Keys are hashed. Device identities are one-way fingerprints.</div>
@@ -104,6 +107,41 @@ client.validate_online()</code></pre><div class="code-footer"><span><b class="gr
           <div class="mock-content"><div class="mock-top"><div><span class="mock-kicker">EXAMPLE WORKSPACE · ILLUSTRATION</span><h3>Good afternoon, Alex <span>✦</span></h3></div><button class="mock-button">+ New license</button></div><div class="stat-row"><div class="stat"><span>Active licenses</span><strong>2,480</strong><small class="positive">↗ 12.8% <em>vs last month</em></small></div><div class="stat"><span>Applications</span><strong>08</strong><small>Across 3 teams</small></div><div class="stat"><span>Activations</span><strong>1,942</strong><small class="positive">↗ 8.4% <em>vs last month</em></small></div></div><div class="mock-lower"><div class="activity-card"><div class="mock-card-title"><strong>Activation activity</strong><span>Last 30 days⌄</span></div><div class="chart"><div class="chart-grid"></div><svg viewBox="0 0 500 130" preserveAspectRatio="none" aria-hidden="true"><defs><linearGradient id="chartFill" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#7b61ff" stop-opacity=".28"/><stop offset="1" stop-color="#7b61ff" stop-opacity="0"/></linearGradient></defs><path d="M0,103 C30,96 41,105 68,85 S110,93 130,76 S164,84 188,60 S220,78 247,53 S280,67 306,42 S345,54 369,30 S401,52 426,22 S464,40 500,9 L500,130 L0,130 Z" fill="url(#chartFill)"/><path d="M0,103 C30,96 41,105 68,85 S110,93 130,76 S164,84 188,60 S220,78 247,53 S280,67 306,42 S345,54 369,30 S401,52 426,22 S464,40 500,9" fill="none" stroke="#7b61ff" stroke-width="3"/></svg></div><div class="chart-labels"><span>May 01</span><span>May 08</span><span>May 15</span><span>May 22</span><span>May 30</span></div></div><div class="recent-card"><div class="mock-card-title"><strong>Recent activations</strong><a href="/dashboard" data-platform-route="/dashboard">View all</a></div><div class="recent-item"><span class="recent-icon blue">◈</span><div><strong>Sketchboard</strong><small>LIC-7K2M-••••</small></div><span class="active-badge">Active</span></div><div class="recent-item"><span class="recent-icon lilac">✦</span><div><strong>Cloud Cutter</strong><small>LIC-3F1A-••••</small></div><span class="active-badge">Active</span></div><div class="recent-item"><span class="recent-icon orange">⌘</span><div><strong>Pixel Forge</strong><small>LIC-9J8P-••••</small></div><span class="active-badge">Active</span></div></div></div></div>
         </div>
       </section>
+
+      <dialog id="customer-scan" class="scanner-dialog" aria-labelledby="scanner-title">
+        <div class="scanner-dialog-card">
+          <div class="scanner-dialog-head">
+            <div>
+              <div class="eyebrow">Customer activation</div>
+              <h2 id="scanner-title">Scan your activation QR.</h2>
+            </div>
+            <button class="scanner-close" type="button" data-close-scanner aria-label="Close scanner">×</button>
+          </div>
+          <p class="scanner-intro">Open this scanner on the customer’s phone and scan the QR code shown in the software. No account is required.</p>
+          <div class="scanner-camera-frame">
+            <video id="home-camera" playsinline muted aria-label="Camera preview"></video>
+            <div class="scanner-guide" aria-hidden="true"></div>
+            <div id="home-camera-placeholder" class="scanner-placeholder">
+              <span class="scanner-placeholder-icon">⌁</span>
+              <strong>Camera is off</strong>
+              <small>Select Start camera to begin.</small>
+            </div>
+          </div>
+          <div class="scanner-actions">
+            <button id="home-start-camera" class="button" type="button">Start camera</button>
+            <button id="home-stop-camera" class="scanner-secondary" type="button" hidden>Stop camera</button>
+          </div>
+          <p id="home-scan-status" class="scanner-status" role="status" aria-live="polite">Ready to scan. Your phone will be identified only for this activation.</p>
+          <form id="home-manual-form" class="scanner-manual-form">
+            <label for="home-manual-code">Can’t use the camera?</label>
+            <div class="scanner-manual-row">
+              <input id="home-manual-code" name="code" type="text" autocomplete="off" placeholder="Paste the QR value" />
+              <button class="scanner-secondary" type="submit">Submit</button>
+            </div>
+          </form>
+          <p class="scanner-privacy">The QR contains a short-lived pairing value, not an API key or password.</p>
+        </div>
+      </dialog>
 
       <section id="pricing" class="closing-section shell"><div class="closing-card" id="get-started"><div class="closing-orb"></div><div class="eyebrow">Start with the core</div><h2>Make access<br /><span>feel effortless.</span></h2><p>Build your first application in minutes. Scale into teams, seats, and plans when you are ready.</p><div class="hero-actions"><a class="button button-light" href="/signup" data-platform-route="/signup">Create a developer account <span>↗</span></a><a class="text-link light-link" href="/docs" data-platform-route="/docs">Read the docs <span>→</span></a></div></div></section>
     </main>

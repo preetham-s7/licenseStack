@@ -1,7 +1,7 @@
 'use strict';
 const $ = (id) => document.getElementById(id);
 const esc = (value) => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const state = {session: localStorage.getItem('license_platform_session') || '', user: null, apps: [], app: '', customers: [], licenses: [], page: 'overview', detail: null, mode: 'login', search: '', status: '', revision: 0};
+const state = {session: localStorage.getItem('license_platform_session') || '', user: null, apps: [], app: '', customers: [], licenses: [], usage: null, page: 'overview', detail: null, mode: 'login', search: '', status: '', revision: 0};
 let dialogSubmit = null;
 let toastTimer;
 const date = (v) => v ? new Date(v).toLocaleDateString(undefined, {day:'numeric',month:'short',year:'numeric'}) : 'No expiry';
@@ -34,8 +34,11 @@ async function api(path, options={}) {
 }
 function notify(message) { $('notification').textContent=message; $('notification').hidden=false; clearTimeout(toastTimer); toastTimer=setTimeout(()=>$('notification').hidden=true,4500); }
 function clearSession() { state.session='';state.user=null;localStorage.removeItem('license_platform_session'); }
+function setAccountMenu(open) { $('accountButton').setAttribute('aria-expanded',String(open)); $('accountMenu').hidden=!open; }
 function showAuth(mode, message='') {
   state.mode=mode;
+  setAccountMenu(false);
+  $('accountWrap').hidden=true;
   $('loadingView').hidden=true; $('appView').hidden=true; $('authView').hidden=false;
   $('mobileLogout').hidden=true;
   $('loginTab').setAttribute('aria-selected',String(mode==='login')); $('signupTab').setAttribute('aria-selected',String(mode==='signup'));
@@ -64,10 +67,12 @@ $('authForm').addEventListener('submit', async event=>{
 async function openWorkspace() {
   state.user=(await api('/v1/me')).developer;
   $('accountName').textContent=state.user.name;$('accountEmail').textContent=state.user.email;$('accountAvatar').textContent=state.user.name.slice(0,1).toUpperCase();
+  $('accountMenuName').textContent=state.user.name;$('accountMenuEmail').textContent=state.user.email;
   state.apps=(await api('/v1/developer/apps')).applications;
   const saved=localStorage.getItem('licensestack-app');state.app=state.apps.find(a=>a.app_id===saved&&a.status==='active')?.app_id || state.apps.find(a=>a.status==='active')?.app_id || '';
   populateApps();
   $('authView').hidden=true;$('loadingView').hidden=true;$('appView').hidden=false;
+  $('accountWrap').hidden=false;
   $('mobileLogout').hidden=false;
   if(location.pathname!=='/dashboard')history.replaceState({},'','/dashboard#overview');
   await refreshData();await route();
@@ -78,14 +83,14 @@ function populateApps() {
 }
 async function refreshData() {
   const revision=++state.revision;
-  if(!state.app||!activeApp()){state.customers=[];state.licenses=[];return;}
-  const [c,l]=await Promise.all([api(`/v1/developer/customers?app_id=${encodeURIComponent(state.app)}`),api(`/v1/developer/licenses?app_id=${encodeURIComponent(state.app)}`)]);
-  if(revision===state.revision){state.customers=c.customers;state.licenses=l.licenses;}
+  if(!state.app||!activeApp()){state.customers=[];state.licenses=[];state.usage=null;return;}
+  const [c,l,u]=await Promise.all([api(`/v1/developer/customers?app_id=${encodeURIComponent(state.app)}`),api(`/v1/developer/licenses?app_id=${encodeURIComponent(state.app)}`),api(`/v1/developer/usage?app_id=${encodeURIComponent(state.app)}`)]);
+  if(revision===state.revision){state.customers=c.customers;state.licenses=l.licenses;state.usage=u;}
 }
 function go(page) { if(location.hash==='#'+page)route();else location.hash=page; }
 async function route() {
   if(!state.user)return;
-  const parts=location.hash.slice(1).split('/');state.page=['overview','customers','licenses','keys','applications'].includes(parts[0])?parts[0]:'overview';
+  const parts=location.hash.slice(1).split('/');state.page=['overview','customers','licenses','keys','applications','activity'].includes(parts[0])?parts[0]:'overview';
   state.search='';state.status='';
   document.querySelectorAll('[data-page]').forEach(b=>b.classList.toggle('active',b.dataset.page===state.page));
   $('breadcrumb').textContent=`Workspace / ${state.page==='keys'?'API & integration':state.page.charAt(0).toUpperCase()+state.page.slice(1)}`;
@@ -105,6 +110,7 @@ function render() {
   if(state.page==='customers')renderCustomers();
   if(state.page==='licenses')renderLicenses();
   if(state.page==='keys')renderKeys();
+  if(state.page==='activity')renderActivity();
 }
 function customerTable(customers) {
   if(!customers.length)return '<div class="empty-state"><div class="empty-icon">♙</div><h2>No customers found.</h2><p>Add your first customer or adjust your search.</p>'+action('new-customer','Add customer','primary')+'</div>';
@@ -113,6 +119,12 @@ function customerTable(customers) {
 function renderOverview() {
   const live=state.licenses.filter(l=>['active','unused'].includes(status(l))).length;
   $('pageContent').innerHTML=heading(`Hello, ${state.user.name.split(' ')[0]}.`,'Your customer access, all in one place.',action('new-customer','＋ Add customer','primary'))+`<div class="metrics"><div class="metric"><span>Customers</span><strong>${state.customers.length}</strong><small>In this application</small></div><div class="metric"><span>Enabled licenses</span><strong>${live}</strong><small>Ready or active</small></div><div class="metric"><span>Activated devices</span><strong>${state.licenses.filter(l=>status(l)==='active').length}</strong><small>One device per license</small></div><div class="metric"><span>Revoked / expired</span><strong>${state.licenses.length-live}</strong><small>Access unavailable</small></div></div><section class="panel"><div class="panel-heading"><h2>Set up your application</h2><span class="badge">${esc(state.app)}</span></div><div class="onboarding"><div class="step-card"><b>01 · APPLICATION REGISTERED ✓</b><h3>Connect your product</h3><p>Your API key is for your server. Your customers receive separate license keys.</p>${action('keys','Open API & integration →','quiet')}</div><div class="step-card"><b>02 · CUSTOMER PROFILES</b><h3>Add your customers</h3><p>Keep each customer’s identity, licenses, and device activity together.</p>${action('new-customer','Add customer →','quiet')}</div><div class="step-card"><b>03 · CUSTOMER ACCESS</b><h3>Issue the first license</h3><p>Choose a customer, set their plan and expiry, and give them the generated key.</p>${action('new-license','Create license →','quiet')}</div></div></section><section class="panel"><div class="panel-heading"><h2>Customers</h2>${action('customers','View all →','quiet')}</div>${customerTable(state.customers.slice(0,5))}</section>`;
+}
+function renderActivity() {
+  const usage=state.usage||{totals:{},last_30_days:{},recent:[]};
+  const total=(name)=>usage.totals[name]||0;
+  const recent=usage.recent||[];
+  $('pageContent').innerHTML=heading('Activity','Real activation, validation, and access events for this application.')+`<div class="metrics"><div class="metric"><span>Validations</span><strong>${total('validated')}</strong><small>${usage.last_30_days?.validated||0} in the last 30 days</small></div><div class="metric"><span>Activations</span><strong>${total('activated')}</strong><small>${usage.last_30_days?.activated||0} in the last 30 days</small></div><div class="metric"><span>Repeat checks</span><strong>${total('activation_repeated')}</strong><small>Existing devices</small></div><div class="metric"><span>Access changes</span><strong>${total('revoked')+total('reset')+total('restore')}</strong><small>Revokes, resets, and restores</small></div></div><section class="panel"><div class="panel-heading"><h2>Recent activity</h2><span class="count">Last 30 days</span></div>${recent.length?`<div class="table-wrap"><table><thead><tr><th>Event</th><th>License</th><th>Plan</th><th>Time</th><th>IP address</th></tr></thead><tbody>${recent.map(event=>`<tr><td><strong>${esc(event.event_type.replace(/_/g,' '))}</strong></td><td class="mono-value">${esc(event.key_prefix)}••••</td><td>${esc(event.plan||'—')}</td><td>${esc(stamp(event.created_at))}</td><td class="mono-value">${esc(event.ip_address||'—')}</td></tr>`).join('')}</tbody></table></div>`:'<div class="empty-state"><div class="empty-icon">◌</div><h2>No activity yet.</h2><p>Activation and validation events will appear here once your customer software connects.</p></div>'}</section>`;
 }
 function renderCustomers() {
   $('pageContent').innerHTML=heading('Customers','Click a customer to view their licenses, devices, and access history.',action('new-customer','＋ Add customer','primary'))+`<section class="panel"><div class="toolbar"><label class="sr-only" for="customerSearch">Search customers</label><input id="customerSearch" type="search" placeholder="Search by name or email…"><span class="count">${state.customers.length} customers</span></div><div id="customerTable">${customerTable(state.customers)}</div></section>`;
@@ -153,6 +165,10 @@ async function submitDialog(event) {
   finally{button.disabled=false;}
 }
 function closeDialog(){$('editorDialog').close();}
+function profileDialog() {
+  const user=state.user||{};
+  openDialog('Developer profile',`<div class="profile-summary"><span class="person-avatar">${initials(user.name||'Developer')}</span><div><h3>${esc(user.name||'Developer')}</h3><p>${esc(user.email||'')}</p></div></div><div class="profile-details"><div><small>Account type</small><strong>Developer account</strong></div><div><small>Workspace access</small><strong>Applications, customers & licenses</strong></div></div><p class="field-help">Your account controls the applications and customer access records in this workspace.</p>`,null,'ACCOUNT PROFILE');
+}
 async function sync(){await refreshData();await route();}
 function secretDialog(title, secret, description, next='keys') {
   openDialog(title,`<p>${esc(description)}</p><div class="key-box"><code id="issuedSecret"></code>${action('copy-secret','Copy key','primary')}</div><p class="field-help">Save this now. Only a masked prefix is available after closing.</p><div class="dialog-actions">${action('secret-done','Saved — continue →','secondary',`data-next="${next}"`)}</div>`,null,'SAVE YOUR KEY');
@@ -191,7 +207,7 @@ document.addEventListener('click', async event=>{
   const b=event.target.closest('[data-action]');if(!b)return;
   const a=b.dataset.action,id=b.dataset.id;
   try{
-    if(['overview','customers','licenses','keys','applications'].includes(a)){go(a);return;}
+    if(['overview','customers','licenses','keys','applications','activity'].includes(a)){go(a);return;}
     if(a==='close'){closeDialog();return;}
     if(a==='new-app'){newApp();return;}
     if(a==='select-app'){state.app=id;populateApps();await refreshData();go('overview');return;}
@@ -214,6 +230,9 @@ document.addEventListener('click', async event=>{
 });
 $('newAppSidebar').addEventListener('click',newApp);$('closeDialog').addEventListener('click',closeDialog);
 $('appSelect').addEventListener('change',async event=>{state.app=event.target.value;populateApps();$('pageContent').innerHTML='<div class="loading-state">Loading application…</div>';try{await refreshData();go('overview');}catch(error){notify(error.message);}});
+$('accountButton').addEventListener('click',()=>setAccountMenu($('accountMenu').hidden));
+$('profileButton').addEventListener('click',()=>{setAccountMenu(false);profileDialog();});
+document.addEventListener('click',event=>{if(!event.target.closest('.account-wrap'))setAccountMenu(false);});
 async function logout(){try{await post('/v1/auth/logout',{});}catch{}clearSession();showAuth('login');}
 $('logoutButton').addEventListener('click',logout);$('mobileLogout').addEventListener('click',logout);
 window.addEventListener('hashchange',()=>route().catch(e=>notify(e.message)));

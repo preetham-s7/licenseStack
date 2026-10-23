@@ -11,16 +11,17 @@
     <link rel="stylesheet" href="/dashboard.css" />
     <link rel="stylesheet" href="/theme.css" />
     <link rel="stylesheet" href="/docs.css" />
+    <link rel="stylesheet" href="/site-common.css" />
   </head>
   <body class="dashboard-body">
-    <header class="dashboard-header shell">
+    <header class="site-header">
       <a class="brand" href="/" aria-label="LicenseStack home"><span class="brand-mark"><span></span><span></span><span></span></span><span>LicenseStack</span></a>
-      <div class="dashboard-header-actions"><span class="local-badge"><span></span> Local API</span><button class="theme-toggle" type="button" data-theme-toggle>Dark mode</button><a class="dashboard-home-link" href="/dashboard">Dashboard <span>↗</span></a></div>
+      <nav class="site-nav"><span class="local-badge"><span></span> Local API</span><button class="theme-toggle" type="button" data-theme-toggle aria-label="Switch to dark theme">☾</button><a href="/scan">Scan QR <span>↗</span></a><a class="dashboard-home-link" href="/dashboard">Dashboard <span>↗</span></a></nav>
     </header>
     <main class="dashboard-shell">
       <section class="docs-hero"><div class="eyebrow"><span class="pulse"></span> Developer documentation</div><h1>Build access into<br /><em>your product.</em></h1><p>Simple REST endpoints for application registration, one-time activation, device binding, and license validation.</p><div class="workspace-pills"><span>BASE URL · 127.0.0.1:8080</span><span>JSON</span><span>REST</span></div></section>
       <div class="docs-layout">
-        <nav class="docs-nav"><strong>On this page</strong><a href="#quickstart">Quickstart</a><a href="#app-key">Create an API key</a><a href="#activate">Activate a license</a><a href="#validate">Validate a token</a><a href="#manage">Manage licenses</a><a href="#errors">Errors</a></nav>
+        <nav class="docs-nav"><strong>On this page</strong><a href="#quickstart">Quickstart</a><a href="#app-key">Create an API key</a><a href="#activate">Activate a license</a><a href="#pairing">Pair a mobile device</a><a href="#validate">Validate a token</a><a href="#manage">Manage licenses</a><a href="#errors">Errors</a></nav>
         <div class="docs-content">
           <article id="quickstart" class="docs-card"><div class="card-kicker">QUICKSTART</div><h2>Connect your application</h2><p>Open the <a href="/dashboard">developer dashboard</a>, create an account, register your application, and keep the returned API key on your server. Customer license keys are separate from developer API keys.</p><pre class="docs-code">POST http://127.0.0.1:8080/v1/activate
 Content-Type: application/json
@@ -37,6 +38,7 @@ Content-Type: application/json
   "token": "signed-license-token",
   "status": "active"
 }</pre></article>
+          <article id="pairing" class="docs-card"><div class="card-kicker">MOBILE QR PAIRING</div><h2>Pair a mobile device</h2><p>After activation, your software can create a short-lived pairing challenge, render its scan path as a QR code, and show it to the customer. The customer scans it at <a href="/scan">/scan</a>; the first scan activates pairing and later scans return <code>already_activated</code>.</p><div class="endpoint-list"><div><code>POST /v1/pairing/create</code><span>Create the QR challenge using the signed desktop token</span></div><div><code>POST /v1/pairing/status</code><span>Poll until the customer scans it</span></div><div><code>POST /v1/pairing/scan</code><span>Used by the mobile scanner</span></div></div></article>
           <article id="validate" class="docs-card"><div class="card-kicker">POST · /v1/validate</div><h2>Validate a token</h2><p>Call validation when your application starts or when it needs to confirm current access.</p><pre class="docs-code">{
   "app_id": "your-application",
   "token": "signed-license-token",

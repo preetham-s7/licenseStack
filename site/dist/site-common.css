@@ -1,0 +1,294 @@
+/*
+ * LicenseStack shared visual system.
+ * Page styles define content layout; this file defines the common product language.
+ */
+
+:root {
+  --ui-radius: 10px;
+  --ui-radius-large: 14px;
+  --ui-border: var(--line);
+  --ui-surface: var(--white);
+  --ui-text: var(--ink);
+  --ui-muted: var(--muted);
+  --ui-accent: var(--purple);
+}
+
+html[data-theme="dark"] {
+  --ui-border: #3b3748;
+  --ui-surface: #211f2a;
+  --ui-text: #f5f2fb;
+  --ui-muted: #aaa5b5;
+  --ui-accent: #aa9bff;
+}
+
+body {
+  font-family: "DM Sans", sans-serif;
+  color: var(--ui-text);
+}
+
+h1,
+h2,
+h3,
+h4,
+.brand {
+  font-family: "Space Grotesk", sans-serif;
+  font-weight: 600;
+}
+
+h1,
+h2,
+h3,
+h4 {
+  letter-spacing: -0.06em;
+}
+
+.site-header,
+.dashboard-header,
+.product-header {
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 78px;
+  border-bottom: 0;
+}
+
+.site-header,
+.dashboard-header {
+  width: min(1240px, calc(100% - 56px));
+  max-width: 1240px;
+  margin: 0 auto;
+  padding: 0;
+}
+
+.product-header {
+  width: 100%;
+  padding: 0 28px;
+  background: var(--ui-surface);
+}
+
+.brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--ui-text);
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: -0.04em;
+  text-decoration: none;
+}
+
+.brand-mark {
+  display: inline-flex;
+  align-items: flex-end;
+  gap: 3px;
+  width: 27px;
+  height: 27px;
+  padding: 5px;
+  box-sizing: border-box;
+  border: 1px solid color-mix(in srgb, var(--ui-accent) 40%, var(--ui-border));
+  border-radius: 8px;
+  background: linear-gradient(145deg, color-mix(in srgb, var(--ui-accent) 22%, var(--ui-surface)), var(--ui-surface));
+  transform: rotate(-8deg);
+  overflow: hidden;
+}
+
+.brand-mark span {
+  display: block;
+  flex: 1 1 0;
+  min-width: 0;
+  border-radius: 2px;
+  background: var(--ui-text);
+}
+
+.brand-mark span:nth-child(1) {
+  height: 45%;
+}
+
+.brand-mark span:nth-child(2) {
+  height: 75%;
+  background: var(--ui-accent);
+}
+
+.brand-mark span:nth-child(3) {
+  height: 100%;
+}
+
+.site-nav,
+.dashboard-header-actions,
+.header-links {
+  display: flex;
+  align-items: center;
+  gap: 26px;
+  color: var(--ui-muted);
+  font-size: 14px;
+}
+
+.site-nav a,
+.dashboard-header-actions a,
+.header-links a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.site-nav a:hover,
+.dashboard-header-actions a:hover,
+.header-links a:hover {
+  color: var(--ui-text);
+}
+
+.theme-toggle {
+  display: inline-grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  border: 1px solid var(--ui-border);
+  border-radius: 50%;
+  background: var(--ui-surface);
+  color: var(--ui-text);
+  font: 600 17px/1 "DM Sans", sans-serif;
+  cursor: pointer;
+}
+
+.theme-toggle:hover {
+  border-color: var(--ui-accent);
+  color: var(--ui-accent);
+}
+
+.button,
+.primary,
+.secondary,
+.quiet,
+.danger,
+.link-button {
+  font-family: "DM Sans", sans-serif;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.primary {
+  border: 1px solid transparent;
+  border-radius: 7px;
+  background: var(--ui-accent);
+  color: #fff;
+}
+
+.primary:hover {
+  filter: brightness(1.06);
+}
+
+.button {
+  font-weight: 600;
+}
+
+.secondary {
+  border: 1px solid var(--ui-border);
+  border-radius: 7px;
+  background: var(--ui-surface);
+  color: var(--ui-text);
+}
+
+.quiet,
+.link-button {
+  border: 0;
+  background: transparent;
+  color: var(--ui-accent);
+}
+
+.danger {
+  border: 1px solid color-mix(in srgb, var(--danger, #bd3855) 35%, var(--ui-border));
+  border-radius: 7px;
+  background: color-mix(in srgb, var(--danger, #bd3855) 9%, var(--ui-surface));
+  color: var(--danger, #bd3855);
+}
+
+input,
+select,
+textarea {
+  font-family: "DM Sans", sans-serif;
+}
+
+.docs-card,
+.docs-nav,
+.admin-card,
+.control-card,
+.form-card,
+.access-card,
+.panel,
+.metric,
+.app-card {
+  border: 1px solid var(--ui-border);
+  border-radius: var(--ui-radius-large);
+  background: var(--ui-surface);
+  color: var(--ui-text);
+  box-shadow: 0 12px 35px rgb(34 29 62 / 5%);
+}
+
+.docs-card p,
+.admin-card p,
+.control-card > p,
+.form-card-heading p,
+.access-card > p {
+  color: var(--ui-muted);
+}
+
+.local-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 7px 10px;
+  border: 1px solid var(--ui-border);
+  border-radius: 20px;
+  background: color-mix(in srgb, var(--ui-surface) 88%, transparent);
+  color: var(--ui-muted);
+  font-size: 10px;
+}
+
+.local-badge > span {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--green, #55c98a);
+}
+
+.card-kicker,
+.eyebrow {
+  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+}
+
+.eyebrow {
+  color: var(--ui-accent);
+  font-size: 10px;
+  text-transform: uppercase;
+}
+
+.pulse {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--ui-accent);
+  box-shadow: 0 0 0 5px color-mix(in srgb, var(--ui-accent) 12%, transparent);
+}
+
+@media (max-width: 680px) {
+  .site-header,
+  .dashboard-header {
+    width: calc(100% - 40px);
+    min-height: 70px;
+  }
+
+  .product-header {
+    min-height: 70px;
+    padding: 0 18px;
+  }
+
+  .site-nav,
+  .dashboard-header-actions,
+  .header-links {
+    gap: 12px;
+  }
+}
