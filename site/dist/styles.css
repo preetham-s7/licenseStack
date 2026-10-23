@@ -35,3 +35,41 @@
 .scanner-manual-row input:focus{outline:2px solid color-mix(in srgb,var(--purple) 35%,transparent);border-color:var(--purple)}
 .scanner-privacy{margin:18px 0 0;color:var(--muted);font-size:11px}
 @media(max-width:680px){.scanner-dialog{width:calc(100% - 20px);max-height:calc(100% - 20px)}.scanner-dialog-card{padding:22px}.scanner-dialog h2{font-size:29px}.scanner-camera-frame,.scanner-camera-frame video{min-height:220px;height:220px}.scanner-manual-row{display:grid;grid-template-columns:1fr}.scanner-manual-row button{width:100%}}
+
+/* Phone layout: prevent hero artwork and actions from creating horizontal scroll. */
+@media(max-width:680px){
+  .shell{width:100%;padding-inline:20px}
+  .site-nav{top:70px;left:0;right:0;max-height:calc(100dvh - 70px);overflow-y:auto;padding:14px 20px;border-radius:0 0 14px 14px}
+  .site-nav a{padding:12px 8px}
+  .site-nav .button{display:flex;justify-content:center;margin-top:6px}
+  .hero{width:100%;min-height:auto;padding-top:34px;padding-bottom:50px}
+  .hero h1{font-size:clamp(42px,12vw,56px);line-height:.98;overflow-wrap:normal}
+  .hero-lede{max-width:none;font-size:16px}
+  .hero-actions{align-items:flex-start;gap:14px}
+  .hero-visual{width:100%;height:300px;margin:0 auto;transform:scale(.9);transform-origin:center}
+  .orbit-large{width:min(525px,calc(100vw - 40px));height:300px}
+  .orbit-small{width:min(360px,80vw);height:210px}
+  .activation-card{width:min(360px,calc(100vw - 72px));padding:17px 15px}
+  .floating-pill{font-size:10px;padding:6px 8px}
+  .pill-app{left:0}.pill-key{right:0}.pill-device{left:2px;bottom:35px}
+  .developer-layout{gap:38px}
+  .developer-copy h2{font-size:clamp(42px,12vw,52px)}
+  .code-window pre{max-width:100%;font-size:11px}
+  .closing-card{padding-inline:28px}
+  .scanner-dialog{margin:auto}
+}
+
+@media(max-width:420px){
+  .shell{padding-inline:16px}
+  .hero{padding-top:26px}
+  .hero h1{font-size:clamp(39px,12.5vw,48px)}
+  .hero-actions{flex-direction:column;align-items:stretch}
+  .hero-actions .button,.hero-actions .text-link{width:100%;justify-content:center;text-align:center}
+  .hero-visual{height:270px;transform:scale(.82)}
+  .proof-strip{grid-template-columns:1fr;gap:15px;padding-block:20px}
+  .section{padding-block:72px}
+  .feature-card{padding:22px}
+  .developer-section{padding-block:72px}
+  .closing-card{padding:42px 22px;min-height:420px}
+  .scanner-dialog-card{padding:18px}
+}

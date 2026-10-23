@@ -292,3 +292,86 @@ textarea {
     gap: 12px;
   }
 }
+
+/* Keep every product surface inside the phone viewport. */
+@media (max-width: 680px) {
+  html,
+  body {
+    min-width: 0;
+    overflow-x: hidden;
+  }
+
+  img,
+  svg,
+  video,
+  canvas {
+    max-width: 100%;
+  }
+
+  .site-header,
+  .dashboard-header {
+    width: 100%;
+    max-width: none;
+    padding-inline: 20px;
+  }
+
+  .product-header {
+    width: 100%;
+    padding-inline: 18px;
+  }
+
+  .brand {
+    min-width: 0;
+    white-space: nowrap;
+    font-size: 18px;
+  }
+
+  .site-nav,
+  .header-links,
+  .dashboard-header-actions {
+    min-width: 0;
+  }
+
+  input,
+  select,
+  textarea,
+  button {
+    max-width: 100%;
+  }
+
+  .dashboard-body .site-nav {
+    gap: 8px;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+  }
+
+  .dashboard-body .site-nav .local-badge {
+    display: none;
+  }
+
+  .dashboard-body .site-nav a {
+    padding: 6px 0;
+    font-size: 12px;
+  }
+}
+
+@media (max-width: 420px) {
+  .site-header,
+  .dashboard-header {
+    padding-inline: 16px;
+  }
+
+  .product-header {
+    padding-inline: 14px;
+  }
+
+  .brand {
+    gap: 7px;
+    font-size: 17px;
+  }
+
+  .brand-mark {
+    width: 25px;
+    height: 25px;
+  }
+}
