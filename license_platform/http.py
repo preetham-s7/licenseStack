@@ -122,6 +122,9 @@ class LicenseRequestHandler(BaseHTTPRequestHandler):
             if parsed.path == "/dashboard":
                 self._developer_page()
                 return
+            if parsed.path == "/docs":
+                if self._serve_static("/docs.html"):
+                    return
             if parsed.path == "/v1/me":
                 self._json(200, {"developer": self._require_developer()})
                 return
@@ -280,6 +283,8 @@ if(session)openWorkspace().catch(()=>{session='';localStorage.removeItem('licens
         self.wfile.write(encoded)
 
     def _admin_page(self) -> None:
+        if self._serve_static("/admin.html"):
+            return
         body = """<!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>License Platform Admin</title><style>

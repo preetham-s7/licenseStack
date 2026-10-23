@@ -10,6 +10,7 @@
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="styles.css" />
     <link rel="stylesheet" href="dashboard.css" />
+    <link rel="stylesheet" href="theme.css" />
   </head>
   <body class="dashboard-body">
     <div class="ambient ambient-one"></div>
@@ -22,6 +23,8 @@
       </a>
       <div class="dashboard-header-actions">
         <span class="local-badge"><span></span> Local workspace</span>
+        <button class="theme-toggle" type="button" data-theme-toggle aria-label="Switch to dark theme">Dark mode</button>
+        <a class="dashboard-home-link" href="/docs.html">Docs <span>↗</span></a>
         <a class="dashboard-home-link" href="/">Back to homepage <span>↗</span></a>
       </div>
     </header>
@@ -77,6 +80,7 @@
     </main>
 
     <footer class="site-footer shell dashboard-footer"><a class="brand" href="/"><span class="brand-mark"><span></span><span></span><span></span></span><span>LicenseStack</span></a><span class="footer-note">Universal licensing infrastructure · local development</span></footer>
+    <script src="theme.js"></script>
     <script src="dashboard.js"></script>
   </body>
 </html>

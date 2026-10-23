@@ -9,6 +9,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="styles.css" />
+    <link rel="stylesheet" href="theme.css" />
   </head>
   <body>
     <div class="ambient ambient-one"></div>
@@ -23,8 +24,9 @@
       <nav id="site-nav" class="site-nav">
         <a href="#platform">Platform</a>
         <a href="#developers">Developers</a>
-        <a href="#api">API</a>
+        <a href="/docs.html" data-platform-route="/docs.html">API</a>
         <a href="#pricing">Pricing</a>
+        <button class="theme-toggle" type="button" data-theme-toggle aria-label="Switch to dark theme">Dark mode</button>
         <a class="nav-login" href="/dashboard" data-platform-route="/dashboard">Sign in</a>
         <a class="button button-small" href="/dashboard" data-platform-route="/dashboard">Start building <span>↗</span></a>
       </nav>
@@ -38,7 +40,7 @@
           <p class="hero-lede">A calm, developer-first way to issue licenses, bind them to trusted devices, and give every application a secure path to activation.</p>
           <div class="hero-actions">
             <a class="button" href="/dashboard" data-platform-route="/dashboard">Create your first app <span>↗</span></a>
-            <a class="text-link" href="#api">Read the API docs <span>→</span></a>
+            <a class="text-link" href="/docs.html" data-platform-route="/docs.html">Read the API docs <span>→</span></a>
           </div>
           <div class="hero-note"><span class="lock-icon">⌁</span> Keys are hashed. Device identities are one-way fingerprints.</div>
         </div>
@@ -106,8 +108,9 @@ client.validate_online()</code></pre><div class="code-footer"><span><b class="gr
       <section id="pricing" class="closing-section shell"><div class="closing-card" id="get-started"><div class="closing-orb"></div><div class="eyebrow">Start with the core</div><h2>Make access<br /><span>feel effortless.</span></h2><p>Build your first application in minutes. Scale into teams, seats, and plans when you are ready.</p><div class="hero-actions"><a class="button button-light" href="/dashboard" data-platform-route="/dashboard">Create a developer account <span>↗</span></a><a class="text-link light-link" href="#api">Read the docs <span>→</span></a></div></div></section>
     </main>
 
-    <footer class="site-footer shell"><a class="brand" href="#top"><span class="brand-mark"><span></span><span></span><span></span></span><span>LicenseStack</span></a><div class="footer-links"><a href="#platform">Platform</a><a href="#developers">Developers</a><a href="#api">Documentation</a><a href="#pricing">Pricing</a><a href="/admin" data-platform-route="/admin">Admin console</a></div><span class="footer-note">Universal licensing infrastructure · 2026</span></footer>
+    <footer class="site-footer shell"><a class="brand" href="#top"><span class="brand-mark"><span></span><span></span><span></span></span><span>LicenseStack</span></a><div class="footer-links"><a href="#platform">Platform</a><a href="#developers">Developers</a><a href="/docs.html" data-platform-route="/docs.html">Documentation</a><a href="#pricing">Pricing</a><a href="/admin" data-platform-route="/admin">Admin console</a></div><span class="footer-note">Universal licensing infrastructure · 2026</span></footer>
     <div class="toast" role="status" aria-live="polite"></div>
+    <script src="theme.js"></script>
     <script src="app.js"></script>
   </body>
 </html>
