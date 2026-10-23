@@ -122,7 +122,7 @@ class LicenseRequestHandler(BaseHTTPRequestHandler):
             if parsed.path == "/dashboard":
                 self._developer_page()
                 return
-            if parsed.path == "/docs":
+            if parsed.path.rstrip("/") == "/docs":
                 if self._serve_static("/docs.html"):
                     return
             if parsed.path == "/v1/me":

@@ -1,5 +1,6 @@
 let session = localStorage.getItem('license_platform_session') || '';
 const out = document.getElementById('out');
+const authOut = document.getElementById('authOut');
 const value = (id) => document.getElementById(id).value.trim();
 const text = (id, content) => { document.getElementById(id).textContent = content; };
 
@@ -12,7 +13,10 @@ async function api(path, options = {}) {
   return data;
 }
 
-function show(valueToShow) { out.textContent = JSON.stringify(valueToShow, null, 2); }
+function show(valueToShow) {
+  const target = document.getElementById('workspace')?.hidden ? authOut : out;
+  if (target) target.textContent = JSON.stringify(valueToShow, null, 2);
+}
 
 async function register() {
   try {
@@ -47,8 +51,15 @@ async function logout() {
 }
 
 async function loadApps() {
-  try { show(await api('/v1/developer/apps')); }
-  catch (error) { show({ error: error.message }); }
+  try {
+    const data = await api('/v1/developer/apps');
+    text('appsOut', JSON.stringify(data, null, 2));
+    show(data);
+  } catch (error) {
+    const data = { error: error.message };
+    text('appsOut', JSON.stringify(data, null, 2));
+    show(data);
+  }
 }
 
 async function registerApp() {

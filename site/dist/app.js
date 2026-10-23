@@ -13,6 +13,12 @@ document.querySelectorAll('[data-platform-route]').forEach((element) => {
   });
 });
 
+document.querySelectorAll('.mock-button').forEach((button) => {
+  if (button.tagName === 'BUTTON') {
+    button.addEventListener('click', () => { window.location.href = `${platformOrigin}/dashboard`; });
+  }
+});
+
 menuToggle?.addEventListener('click', () => {
   const isOpen = siteNav.classList.toggle('open');
   menuToggle.setAttribute('aria-expanded', String(isOpen));
