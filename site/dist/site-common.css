@@ -375,3 +375,15 @@ textarea {
     height: 25px;
   }
 }
+
+/* The shared desktop nav is loaded after the homepage stylesheet. Keep the
+   landing-page mobile menu closed unless the toggle explicitly opens it. */
+@media (max-width: 680px) {
+  .landing-header .site-nav:not(.open) {
+    display: none;
+  }
+
+  .landing-header .site-nav.open {
+    display: flex;
+  }
+}
